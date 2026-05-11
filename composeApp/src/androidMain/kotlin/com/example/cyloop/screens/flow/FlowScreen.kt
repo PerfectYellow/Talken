@@ -17,7 +17,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.cyloop.screens.main.StatCard
 
 @Composable
 fun FlowScreen() {
@@ -44,8 +43,8 @@ fun FlowScreen() {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            StatCard("Total ", "0")
-            StatCard("Balance", "0 km")
+            Text("Total ")
+            Text("Total ")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -54,8 +53,8 @@ fun FlowScreen() {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            StatCard("Time", "0 hrs")
-            StatCard("Avg ", "0 km/h")
+            Text("Total ")
+            Text("Total ")
         }
     }
 }

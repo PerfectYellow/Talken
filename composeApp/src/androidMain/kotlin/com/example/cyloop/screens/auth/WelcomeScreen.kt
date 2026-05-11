@@ -9,6 +9,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +32,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -42,24 +44,27 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupProperties
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+//import com.example.cyloop.Screen
+//import com.example.cyloop.rememberNavController
 import cyloop.composeapp.generated.resources.Res
 import cyloop.composeapp.generated.resources.logo
 import org.jetbrains.compose.resources.painterResource
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.rememberModalBottomSheetState
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WelcomeScreen(
     onSignInClick: () -> Unit,
@@ -67,7 +72,13 @@ fun WelcomeScreen(
     onDevNetClick: () -> Unit
 ) {
     // State for popup visibility
-    var showPopup by remember { mutableStateOf(false) }
+    var showNetworkDialog by remember { mutableStateOf(false) }
+    var showCreateAccountSheet by remember { mutableStateOf(false) }
+    var username by remember { mutableStateOf("") }
+
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = false
+    )
 
     // Animated gradient offset for live gradient effect
     val infiniteTransition = rememberInfiniteTransition(label = "gradient")
@@ -84,65 +95,29 @@ fun WelcomeScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF0F2027),
-                        Color(0xFF203A43),
-                        Color(0xFF2C5364)
-                    )
-                )
-            )
     ) {
-        // Decorative circles in background
-        DecorativeCircles()
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(160.dp))
 
             // Animated cycling icon with curved background
             Box(
                 modifier = Modifier
                     .size(140.dp)
-                    .clip(CircleShape)
-                    .background(
-                        Brush.sweepGradient(
-                            colors = listOf(
-                                Color(0xFF4A90E2),
-                                Color(0xFF357ABD),
-                                Color(0xFF4A90E2),
-                                Color(0xFF6BB5FF),
-                                Color(0xFF4A90E2)
-                            )
-                        )
-                    )
-                    .shadow(
-                        elevation = 15.dp,
-                        shape = CircleShape,
-                        ambientColor = Color(0xFF4A90E2),
-                        spotColor = Color(0xFF4A90E2)
-                    ),
+                    .clip(CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 // Inner circle
                 Box(
                     modifier = Modifier
-                        .size(120.dp)
+                        .size(150.dp)
                         .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.95f))
-                        .border(
-                            width = 3.dp,
-                            brush = Brush.horizontalGradient(
-                                colors = listOf(Color(0xFF4A90E2), Color(0xFF6BB5FF))
-                            ),
-                            shape = CircleShape
-                        ),
+                        .background(Color.White.copy(alpha = 0.95f)),
                     contentAlignment = Alignment.Center
                 ) {
                     // Logo image with curved shape
@@ -150,7 +125,7 @@ fun WelcomeScreen(
                         painter = painterResource(Res.drawable.logo),
                         contentDescription = "Cyloop Logo",
                         modifier = Modifier
-                            .size(90.dp)
+                            .size(150.dp)
                             .clip(CircleShape),
                         contentScale = ContentScale.Crop
                     )
@@ -172,20 +147,12 @@ fun WelcomeScreen(
 
             Text(
                 text = "Stay Invisible",
-                fontSize = 40.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                style = TextStyle(
-                    brush = animatedBrush,
-                    shadow = Shadow(
-                        color = Color(0xFF4A90E2).copy(alpha = 0.3f),
-                        offset = Offset(4f, 4f),
-                        blurRadius = 8f
-                    )
-                ),
                 letterSpacing = 3.sp
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(100.dp))
 
             // Tagline with curved design
             Box(
@@ -205,218 +172,270 @@ fun WelcomeScreen(
                 Text(
                     text = "To get started, Create a new account or SignIn an existing one",
                     fontSize = 14.sp,
-                    color = Color.White.copy(alpha = 0.85f),
+                    color = Color.DarkGray,
                     fontWeight = FontWeight.Medium,
                     letterSpacing = 1.sp,
                     textAlign = TextAlign.Center
                 )
             }
 
-            Spacer(modifier = Modifier.height(60.dp))
+            Spacer(modifier = Modifier.weight(1f))
 
             // Row for Sign In and Gear button
-            Box {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Sign In Button
+                Button(
+                    onClick = {
+                        showCreateAccountSheet = true
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(52.dp)
+                        .shadow(
+                            elevation = 8.dp,
+                            shape = RoundedCornerShape(5.dp),
+                            ambientColor = Color(0xFF4A90E2),
+                            spotColor = Color(0xFF4A90E2)
+                        ),
+                    shape = RoundedCornerShape(5.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF4A90E2),
+                        contentColor = Color.White
+                    ),
+                    contentPadding = PaddingValues(0.dp)
                 ) {
-                    // Sign In Button
-                    Button(
-                        onClick = onSignInClick,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(52.dp)
-                            .shadow(
-                                elevation = 8.dp,
-                                shape = RoundedCornerShape(30.dp),
-                                ambientColor = Color(0xFF4A90E2),
-                                spotColor = Color(0xFF4A90E2)
-                            ),
-                        shape = RoundedCornerShape(30.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White,
-                            contentColor = Color(0xFF203A43)
-                        ),
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        Text(
-                            text = "CREATE A NEW ACCOUNT",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            letterSpacing = 1.5.sp,
-                            modifier = Modifier.padding(horizontal = 16.dp)
-                        )
-                    }
-
-                    // Gear/Settings Button
-                    Button(
-                        onClick = { showPopup = !showPopup },
-                        modifier = Modifier
-                            .size(52.dp)
-                            .shadow(
-                                elevation = 8.dp,
-                                shape = CircleShape,
-                                ambientColor = Color(0xFF4A90E2),
-                                spotColor = Color(0xFF4A90E2)
-                            ),
-                        shape = CircleShape,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White,
-                            contentColor = Color(0xFF203A43)
-                        ),
-                        contentPadding = PaddingValues(0.dp)  // Add this - removes default padding
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Settings",
-                            modifier = Modifier
-                                .fillMaxSize()  // This will make icon fill the button
-                                .padding(14.dp),  // Adjust padding to control visible icon size
-                            tint = Color(0xFF203A43)
-                        )
-                    }
+                    Text(
+                        text = "CREATE A NEW ACCOUNT",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 1.5.sp,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
                 }
 
-                // Popup Menu
-                VerticalPopupMenu(
-                    isVisible = showPopup,
-                    onDismiss = { showPopup = false },
-                    menuItems = listOf(
-                        PopupMenuItem(
-                            title = "Main-Net",
-                            onClick = onMainNetClick
+                // Gear/Settings Button
+                Button(
+                    onClick = { showNetworkDialog = true },
+                    modifier = Modifier
+                        .size(52.dp)
+                        .shadow(
+                            elevation = 8.dp,
+                            shape = RoundedCornerShape(5.dp),
+                            ambientColor = Color(0xFF4A90E2),
+                            spotColor = Color(0xFF4A90E2)
                         ),
-                        PopupMenuItem(
-                            title = "Dev-Net",
-                            onClick = onDevNetClick
-                        ),
+                    shape = RoundedCornerShape(5.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.White,
+                        contentColor = Color(0xFF203A43)
                     ),
-                    offsetX = 0,
-                    offsetY = (-60) // Adjust position above the button
-                )
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Settings",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(14.dp),
+                        tint = Color(0xFF203A43)
+                    )
+                }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
 
             Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
 
+    // Centered Network Selection Dialog
+    if (showNetworkDialog) {
+        NetworkSelectionDialog(
+            onDismiss = { showNetworkDialog = false },
+            onMainNetClick = {
+                onMainNetClick()
+                showNetworkDialog = false
+            },
+            onDevNetClick = {
+                onDevNetClick()
+                showNetworkDialog = false
+            }
+        )
+    }
+
+    if (showCreateAccountSheet) {
+        ModalBottomSheet(
+            onDismissRequest = {
+                showCreateAccountSheet = false
+            },
+            sheetState = sheetState,
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            containerColor = Color.White
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                Text(
+                    text = "Login / Signup",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+
+                Spacer(modifier = Modifier.height(28.dp))
+
+                // Email field with light styling
+                OutlinedTextField(
+                    value = username,
+                    onValueChange = { username = it },
+                    label = { Text("Username", color = Color(0xFF1976D2)) },
+                    placeholder = { Text("Enter your username") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Button(
+                    onClick = {
+                        println("WelcomeScreen: Continue clicked")
+                        onSignInClick()
+                        showCreateAccountSheet = false
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF4A90E2),
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text("Continue")
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+            }
         }
     }
 }
 
 @Composable
-fun DecorativeCircles() {
-    // Decorative Circle 1 - Top Right
-    Box(
-        modifier = Modifier
-            .size(200.dp)
-            .offset(x = 80.dp, y = (-60).dp)
-            .background(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color(0xFF4A90E2).copy(alpha = 0.2f),
-                        Color(0xFF4A90E2).copy(alpha = 0f)
-                    )
-                ),
-                shape = CircleShape
-            )
-    )
-
-    // Decorative Circle 2 - Bottom Left
-    Box(
-        modifier = Modifier
-            .size(250.dp)
-            .offset(x = (-100).dp, y = 80.dp)
-            .background(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color(0xFF6BB5FF).copy(alpha = 0.15f),
-                        Color(0xFF6BB5FF).copy(alpha = 0f)
-                    )
-                ),
-                shape = CircleShape
-            )
-    )
-
-    // Decorative Circle 3 - Center Right
-    Box(
-        modifier = Modifier
-            .size(150.dp)
-            .offset(x = 60.dp, y = (-40).dp)
-            .background(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color(0xFF9BFFFF).copy(alpha = 0.1f),
-                        Color(0xFF9BFFFF).copy(alpha = 0f)
-                    )
-                ),
-                shape = CircleShape
-            )
-    )
-}
-
-@Composable
-fun VerticalPopupMenu(
-    isVisible: Boolean,
+fun NetworkSelectionDialog(
     onDismiss: () -> Unit,
-    menuItems: List<PopupMenuItem>,
-    offsetX: Int = 0,
-    offsetY: Int = (-60)
+    onMainNetClick: () -> Unit,
+    onDevNetClick: () -> Unit
 ) {
-    if (isVisible) {
-        Popup(
-            alignment = Alignment.TopEnd,
-            offset = IntOffset(offsetX, offsetY),
-            onDismissRequest = onDismiss,
-            properties = PopupProperties(
-                focusable = true,
-                dismissOnBackPress = true,
-                dismissOnClickOutside = true
-            )
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f))
+                .clickable(onClick = onDismiss),
+            contentAlignment = Alignment.Center
         ) {
-            Box(
+            // Centered Popup Card
+            Surface(
                 modifier = Modifier
-                    .width(180.dp)
+                    .width(320.dp)
                     .shadow(
-                        elevation = 8.dp,
-                        shape = RoundedCornerShape(12.dp),
-                        ambientColor = Color.Black.copy(alpha = 0.3f),
-                        spotColor = Color.Black.copy(alpha = 0.3f)
+                        elevation = 24.dp,
+                        shape = RoundedCornerShape(20.dp),
+                        ambientColor = Color.White,
+                        spotColor = Color.White
                     )
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(
-                        color = Color(0xFF203A43),
-                        shape = RoundedCornerShape(12.dp)
-                    )
+                    .clip(RoundedCornerShape(20.dp)),
+                color = Color.White,
+                onClick = {} // Prevents click from propagating to background
             ) {
                 Column(
-                    modifier = Modifier.padding(vertical = 8.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    menuItems.forEachIndexed { index, item ->
+                    // Title
+                    Text(
+                        text = "Please Select Your Network",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(bottom = 24.dp)
+                    )
+
+                    // Main-Net Button
+                    Button(
+                        onClick = onMainNetClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White,
+                            contentColor = Color.Black
+                        )
+                    ) {
+                        Text(
+                            text = "Main-Net",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Dev-Net Button
+                    Button(
+                        onClick = onDevNetClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White,
+                            contentColor = Color(0xFF1E2A38)
+                        )
+                    ) {
+                        Text(
+                            text = "Dev-Net",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // OK Button
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
                         TextButton(
-                            onClick = {
-                                item.onClick()
-                                onDismiss()
-                            },
+                            onClick = onDismiss,
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp)
+                                .width(60.dp)
+                                .height(40.dp)
                         ) {
                             Text(
-                                text = item.title,
-                                color = item.textColor ?: Color.White,
-                                fontSize = (item.fontSize ?: 14).sp,
-                                fontWeight = item.fontWeight ?: FontWeight.Medium,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                            )
-                        }
-
-                        if (index < menuItems.size - 1) {
-                            HorizontalDivider(
-                                modifier = Modifier.padding(horizontal = 12.dp),
-                                thickness = 0.5.dp,
-                                color = Color.White.copy(alpha = 0.1f)
+                                text = "OK",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFF4A90E2)
                             )
                         }
                     }
@@ -424,24 +443,22 @@ fun VerticalPopupMenu(
             }
         }
     }
-}
 
-data class PopupMenuItem(
-    val title: String,
-    val onClick: () -> Unit,
-    val textColor: Color? = null,
-    val fontSize: Int? = null,
-    val fontWeight: FontWeight? = null
-)
+
+}
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun PreviewWelcomeScreen() {
+//    val navController = rememberNavController()
     MaterialTheme {
         WelcomeScreen(
-            onSignInClick = {},
-            onMainNetClick = {},
-            onDevNetClick = {}
+            onSignInClick = {
+                println("Navigation: Sign in clicked")
+//                navController.navigateTo(Screen.TAB_VIEW)
+            },
+            onMainNetClick = { /* TODO */ },
+            onDevNetClick = { /* TODO */ }
         )
     }
 }

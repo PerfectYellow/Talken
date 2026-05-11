@@ -55,7 +55,7 @@ fun ChatScreen() {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Your Profile",
+                text = "Your Chats",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Medium
             )

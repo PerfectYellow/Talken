@@ -39,7 +39,7 @@ sealed class BottomNavScreen(
     val icon: ImageVector,
     val selectedIcon: ImageVector
 ) {
-    object Home : BottomNavScreen("home", "Profile", Icons.Default.Person, Icons.Default.Person)
+    object Profile : BottomNavScreen("home", "Profile", Icons.Default.Person, Icons.Default.Person)
     object Wallet : BottomNavScreen("wallet", "Wallet", Icons.Default.Wallet, Icons.Default.Wallet)
     object Flow : BottomNavScreen("flow", "Flow", Icons.Default.AreaChart, Icons.Default.AreaChart)
     object Chats : BottomNavScreen("chats", "Chats", Icons.Default.ChatBubbleOutline, Icons.Default.ChatBubble)
@@ -47,9 +47,10 @@ sealed class BottomNavScreen(
 
 @Composable
 fun TabBarView(
-    onSignOut: () -> Unit
+    onSignOut: () -> Unit,
+    onNavigateToPasscodeLock: () -> Unit
 ) {
-    var selectedScreen by remember { mutableStateOf<BottomNavScreen>(BottomNavScreen.Home) }
+    var selectedScreen by remember { mutableStateOf<BottomNavScreen>(BottomNavScreen.Profile) }
 
     Scaffold(
         bottomBar = {
@@ -67,7 +68,19 @@ fun TabBarView(
                 .padding(paddingValues)
         ) {
             when (selectedScreen) {
-                BottomNavScreen.Home -> ProfileScreen(onSignOut = onSignOut)
+                BottomNavScreen.Profile -> ProfileScreen(
+                    onSignOut = onSignOut,
+                    userName = "kaay",
+                    userBalance = "0.0 Sol",
+                    qrCodeBitmap = null,
+                    onLogoutClick = onSignOut,
+                    onQrCodeClick = {},
+                    walletAddress = "9xQq...3fGt",
+                    onManageLogsClick = {},
+                    onCopyAddressClick = {},
+                    onExportWalletClick = {},
+                    onPasscodeLockClick = onNavigateToPasscodeLock
+                )
                 BottomNavScreen.Wallet -> WalletScreen()
                 BottomNavScreen.Flow -> FlowScreen()
                 BottomNavScreen.Chats -> ChatScreen()
@@ -86,10 +99,10 @@ fun BottomNavigationBar(
         tonalElevation = 8.dp
     ) {
         val items = listOf(
-            BottomNavScreen.Home,
-            BottomNavScreen.Wallet,
+            BottomNavScreen.Chats,
             BottomNavScreen.Flow,
-            BottomNavScreen.Chats
+            BottomNavScreen.Wallet,
+            BottomNavScreen.Profile,
         )
 
         items.forEach { screen ->
@@ -127,6 +140,6 @@ fun BottomNavigationBar(
 @Composable
 fun PreviewTabBarView() {
     MaterialTheme {
-        TabBarView(onSignOut = {})
+        TabBarView(onSignOut = {}, onNavigateToPasscodeLock = {})
     }
 }
