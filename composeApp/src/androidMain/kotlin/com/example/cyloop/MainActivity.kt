@@ -14,9 +14,10 @@ import androidx.compose.runtime.remember
 import com.example.cyloop.screens.auth.WelcomeScreen
 import com.example.cyloop.screens.main.TabBarView
 import com.example.cyloop.nav.rememberNavController
+import androidx.fragment.app.FragmentActivity
 import com.example.cyloop.nav.NavHost
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)

@@ -54,8 +54,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-//import com.example.cyloop.Screen
-//import com.example.cyloop.rememberNavController
+import androidx.compose.runtime.collectAsState
+import com.example.cyloop.storage.AuthPreferences
 import cyloop.composeapp.generated.resources.Res
 import cyloop.composeapp.generated.resources.logo
 import org.jetbrains.compose.resources.painterResource
@@ -63,6 +63,14 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.rememberModalBottomSheetState
+import android.content.Context
+import androidx.biometric.BiometricManager
+import com.example.cyloop.screens.profile.AuthSettings
+import androidx.biometric.BiometricPrompt
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
+import androidx.compose.ui.platform.LocalContext
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,10 +79,15 @@ fun WelcomeScreen(
     onMainNetClick: () -> Unit,
     onDevNetClick: () -> Unit
 ) {
-    // State for popup visibility
     var showNetworkDialog by remember { mutableStateOf(false) }
     var showCreateAccountSheet by remember { mutableStateOf(false) }
     var username by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    val activity = context as? FragmentActivity
+
+    val biometricEnabled by AuthPreferences
+        .isBiometricEnabled(context)
+        .collectAsState(initial = false)
 
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = false
@@ -190,7 +203,38 @@ fun WelcomeScreen(
                 // Sign In Button
                 Button(
                     onClick = {
-                        showCreateAccountSheet = true
+                        if (biometricEnabled) {
+                            val executor = ContextCompat.getMainExecutor(context)
+
+                            activity?.let {
+
+                                val biometricPrompt = BiometricPrompt(
+                                    it,
+                                    executor,
+                                    object : BiometricPrompt.AuthenticationCallback() {
+
+                                        override fun onAuthenticationSucceeded(
+                                            result: BiometricPrompt.AuthenticationResult
+                                        ) {
+                                            super.onAuthenticationSucceeded(result)
+
+                                            onSignInClick()
+                                        }
+                                    }
+                                )
+
+                                val promptInfo = BiometricPrompt.PromptInfo.Builder()
+                                    .setTitle("Biometric Authentication")
+                                    .setSubtitle("Verify your identity")
+                                    .setNegativeButtonText("Cancel")
+                                    .build()
+
+                                biometricPrompt.authenticate(promptInfo)
+                            }
+                        } else {
+
+                            showCreateAccountSheet = true
+                        }
                     },
                     modifier = Modifier
                         .weight(1f)
@@ -384,7 +428,7 @@ fun NetworkSelectionDialog(
                             .height(52.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White,
+                            containerColor = Color.LightGray,
                             contentColor = Color.Black
                         )
                     ) {
@@ -406,7 +450,7 @@ fun NetworkSelectionDialog(
                             .height(52.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White,
+                            containerColor = Color.LightGray,
                             contentColor = Color(0xFF1E2A38)
                         )
                     ) {

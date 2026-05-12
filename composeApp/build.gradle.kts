@@ -29,8 +29,13 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
+
+            implementation("androidx.datastore:datastore-preferences:1.1.1")
+
             implementation("org.jetbrains.compose.material:material-icons-extended:1.7.3")
+
             implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.7")
+            implementation("androidx.biometric:biometric:1.4.0-alpha02")
 
             implementation(libs.ktor.client.android)
 
