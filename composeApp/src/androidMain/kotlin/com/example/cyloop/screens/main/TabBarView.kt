@@ -1,7 +1,6 @@
 package com.example.cyloop.screens.main
 
 import androidx.compose.material3.NavigationBarItemDefaults
-
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -31,33 +30,49 @@ import com.example.cyloop.screens.flow.FlowScreen
 import com.example.cyloop.screens.profile.ProfileScreen
 import com.example.cyloop.screens.wallet.WalletScreen
 
-
-// Sealed class for screen navigation
 sealed class BottomNavScreen(
     val route: String,
     val title: String,
     val icon: ImageVector,
     val selectedIcon: ImageVector
 ) {
-    object Profile : BottomNavScreen("home", "Profile", Icons.Default.Person, Icons.Default.Person)
+    object Profile : BottomNavScreen("profile", "Profile", Icons.Default.Person, Icons.Default.Person)
     object Wallet : BottomNavScreen("wallet", "Wallet", Icons.Default.Wallet, Icons.Default.Wallet)
     object Flow : BottomNavScreen("flow", "Flow", Icons.Default.AreaChart, Icons.Default.AreaChart)
     object Chats : BottomNavScreen("chats", "Chats", Icons.Default.ChatBubbleOutline, Icons.Default.ChatBubble)
+
+    companion object {
+        fun fromRoute(route: String): BottomNavScreen {
+            return when (route) {
+                "chats" -> Chats
+                "flow" -> Flow
+                "wallet" -> Wallet
+                else -> Profile
+            }
+        }
+    }
 }
 
 @Composable
 fun TabBarView(
+    initialTab: String,
+    onTabSelected: (String) -> Unit,
     onSignOut: () -> Unit,
-    onNavigateToPasscodeLock: () -> Unit
+    onNavigateToPasscodeLock: () -> Unit,
+    onNavigateToChatDetail: (String, String) -> Unit,
+    onNavigateToNewChat: () -> Unit
 ) {
-    var selectedScreen by remember { mutableStateOf<BottomNavScreen>(BottomNavScreen.Profile) }
+    var selectedScreen by remember(initialTab) { 
+        mutableStateOf(BottomNavScreen.fromRoute(initialTab)) 
+    }
 
     Scaffold(
         bottomBar = {
             BottomNavigationBar(
                 selectedScreen = selectedScreen,
                 onScreenSelected = {
-                        selectedScreen = it
+                    selectedScreen = it
+                    onTabSelected(it.route)
                 }
             )
         }
@@ -83,7 +98,10 @@ fun TabBarView(
                 )
                 BottomNavScreen.Wallet -> WalletScreen()
                 BottomNavScreen.Flow -> FlowScreen()
-                BottomNavScreen.Chats -> ChatScreen()
+                BottomNavScreen.Chats -> ChatScreen(
+                    onChatClick = onNavigateToChatDetail,
+                    onNewChatClick = onNavigateToNewChat
+                )
             }
         }
     }
@@ -135,11 +153,17 @@ fun BottomNavigationBar(
     }
 }
 
-
 @Preview(showBackground = true)
 @Composable
 fun PreviewTabBarView() {
     MaterialTheme {
-        TabBarView(onSignOut = {}, onNavigateToPasscodeLock = {})
+        TabBarView(
+            initialTab = "profile",
+            onTabSelected = {},
+            onSignOut = {}, 
+            onNavigateToPasscodeLock = {},
+            onNavigateToChatDetail = { _, _ -> },
+            onNavigateToNewChat = {}
+        )
     }
 }

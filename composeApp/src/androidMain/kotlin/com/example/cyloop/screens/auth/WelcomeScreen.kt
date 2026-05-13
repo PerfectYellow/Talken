@@ -1,5 +1,6 @@
 package com.example.cyloop.screens.auth
 
+import androidx.biometric.BiometricPrompt
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -8,7 +9,6 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -29,13 +28,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,6 +50,8 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -54,22 +59,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.compose.runtime.collectAsState
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
 import com.example.cyloop.storage.AuthPreferences
 import cyloop.composeapp.generated.resources.Res
 import cyloop.composeapp.generated.resources.logo
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.rememberModalBottomSheetState
-import android.content.Context
-import androidx.biometric.BiometricManager
-import com.example.cyloop.screens.profile.AuthSettings
-import androidx.biometric.BiometricPrompt
-import androidx.core.content.ContextCompat
-import androidx.fragment.app.FragmentActivity
-import androidx.compose.ui.platform.LocalContext
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -161,8 +156,9 @@ fun WelcomeScreen(
             Text(
                 text = "Stay Invisible",
                 fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 3.sp
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 1.5.sp
             )
 
             Spacer(modifier = Modifier.height(100.dp))
@@ -183,7 +179,7 @@ fun WelcomeScreen(
                     .padding(horizontal = 20.dp, vertical = 10.dp)
             ) {
                 Text(
-                    text = "To get started, Create a new account or SignIn an existing one",
+                    text = "Get started by creating a new account or signing in to an existing one.",
                     fontSize = 14.sp,
                     color = Color.DarkGray,
                     fontWeight = FontWeight.Medium,
@@ -421,46 +417,18 @@ fun NetworkSelectionDialog(
                     )
 
                     // Main-Net Button
-                    Button(
-                        onClick = onMainNetClick,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.LightGray,
-                            contentColor = Color.Black
-                        )
-                    ) {
-                        Text(
-                            text = "Main-Net",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            letterSpacing = 0.5.sp
-                        )
-                    }
+                    NetworkButton(
+                        text = "Main-Net",
+                        onClick = onMainNetClick
+                    )
 
                     Spacer(modifier = Modifier.height(12.dp))
 
                     // Dev-Net Button
-                    Button(
-                        onClick = onDevNetClick,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.LightGray,
-                            contentColor = Color(0xFF1E2A38)
-                        )
-                    ) {
-                        Text(
-                            text = "Dev-Net",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            letterSpacing = 0.5.sp
-                        )
-                    }
+                    NetworkButton(
+                        text = "Dev-Net",
+                        onClick = onDevNetClick
+                    )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -487,19 +455,50 @@ fun NetworkSelectionDialog(
             }
         }
     }
+}
 
-
+@Composable
+fun NetworkButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(52.dp)
+            .shadow(
+                elevation = 2.dp,
+                shape = RoundedCornerShape(12.dp),
+                clip = false
+            ),
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.White,
+            contentColor = Color(0xFF1A1A2E)
+        ),
+        elevation = ButtonDefaults.buttonElevation(
+            defaultElevation = 0.dp,
+            pressedElevation = 2.dp
+        )
+    ) {
+        Text(
+            text = text,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 0.5.sp
+        )
+    }
 }
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun PreviewWelcomeScreen() {
-//    val navController = rememberNavController()
     MaterialTheme {
         WelcomeScreen(
             onSignInClick = {
                 println("Navigation: Sign in clicked")
-//                navController.navigateTo(Screen.TAB_VIEW)
             },
             onMainNetClick = { /* TODO */ },
             onDevNetClick = { /* TODO */ }

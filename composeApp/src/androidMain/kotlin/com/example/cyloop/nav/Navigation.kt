@@ -9,20 +9,26 @@ sealed class Route {
     data object Welcome : Route()
 
     @Serializable
-    data object TabView : Route()
+    data class TabView(val tab: String = "profile") : Route()
 
     @Serializable
     data object PasscodeLock : Route()
 
-    // Add more screens as you grow
+    @Serializable
+    data class ChatDetail(val chatId: String, val chatName: String) : Route()
+
+    @Serializable
+    data object NewChat : Route()
+
     @Serializable
     data class Detail(val id: String) : Route()
 }
 
-// Route extensions for cleaner navigation
 fun Route.toNavString(): String = when (this) {
     is Route.Welcome -> "welcome"
-    is Route.TabView -> "tab_view"
+    is Route.TabView -> "tab_view/${tab}"
     is Route.PasscodeLock -> "passcode_lock"
+    is Route.ChatDetail -> "chat_detail/${chatId}/${chatName}"
+    is Route.NewChat -> "new_chat"
     is Route.Detail -> "detail/${id}"
 }
