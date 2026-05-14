@@ -4,9 +4,11 @@ package com.example.cyloop.screens.profile
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Icon
@@ -25,38 +27,40 @@ import com.example.cyloop.screens.main.TabBarView
 
 @Composable
 fun ProfileMenuItem(
-    icon: ImageVector,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    onClick: () -> Unit
 ) {
     Row(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
+            .clickable {
+                println("ProfileMenuItem: Clicked on $title")
+                onClick()
+            }
             .padding(horizontal = 20.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = null,
-            tint = Color.Gray
+            contentDescription = title,
+            modifier = Modifier.size(24.dp),
+            tint = Color(0xFF555555)
         )
-
+        Spacer(modifier = Modifier.width(16.dp))
         Text(
             text = title,
             fontSize = 16.sp,
-            fontWeight = FontWeight.Medium,
-            color = Color(0xFF333333),
-            modifier = Modifier.weight(1f)
+            color = Color.Black,
+            fontWeight = FontWeight.Medium
         )
-
-         Icon(
-             imageVector = Icons.Default.ChevronRight,
-             contentDescription = null,
-             tint = Color.Gray
-         )
+        Spacer(modifier = Modifier.weight(1f))
+        Icon(
+            imageVector = Icons.Default.ChevronRight,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = Color(0xFFCCCCCC)
+        )
     }
 }
 

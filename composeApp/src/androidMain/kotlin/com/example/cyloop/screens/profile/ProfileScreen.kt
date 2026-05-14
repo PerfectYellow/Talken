@@ -46,6 +46,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.cyloop.screens.profile.ProfileMenuItem
 //import com.example.cyloop.rememberNavController
 
 @Composable
@@ -243,45 +244,6 @@ fun ProfileHeaderWithQR(
                 }
             }
         }
-    }
-}
-
-@Composable
-fun ProfileMenuItem(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { 
-                println("ProfileMenuItem: Clicked on $title")
-                onClick() 
-            }
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = title,
-            modifier = Modifier.size(24.dp),
-            tint = Color(0xFF555555)
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(
-            text = title,
-            fontSize = 16.sp,
-            color = Color.Black,
-            fontWeight = FontWeight.Medium
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        Icon(
-            imageVector = Icons.Default.ChevronRight,
-            contentDescription = null,
-            modifier = Modifier.size(20.dp),
-            tint = Color(0xFFCCCCCC)
-        )
     }
 }
 

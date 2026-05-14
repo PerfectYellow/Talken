@@ -18,10 +18,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import com.example.cyloop.storage.AuthPreferences
 
 
-object AuthSettings {
-    var isBiometricEnabled by mutableStateOf(false)
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PasscodeLockScreen(
@@ -32,8 +28,12 @@ fun PasscodeLockScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    // Derived state for the radio button selection
-    val selectedOption = if (AuthSettings.isBiometricEnabled) options[0] else options[1]
+    val isBiometricEnabled by AuthPreferences
+        .isBiometricEnabled(context)
+        .collectAsState(initial = false)
+
+    val selectedOption =
+        if (isBiometricEnabled) options[0] else options[1]
 
     Scaffold(
         topBar = {
@@ -76,8 +76,6 @@ fun PasscodeLockScreen(
                                 onClick = {
                                     val enabled = (text == options[0])
 
-                                    AuthSettings.isBiometricEnabled = enabled
-
                                     scope.launch {
                                         AuthPreferences.setBiometricEnabled(
                                             context,
@@ -106,7 +104,7 @@ fun PasscodeLockScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             // Password specific UI
-            if (!AuthSettings.isBiometricEnabled) {
+            if (!isBiometricEnabled) {
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
