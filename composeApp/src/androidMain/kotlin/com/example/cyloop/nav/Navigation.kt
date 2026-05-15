@@ -22,6 +22,12 @@ sealed class Route {
 
     @Serializable
     data class Detail(val id: String) : Route()
+
+//    @Serializable
+//    data object Withdraw : Route()
+//
+//    @Serializable
+//    data object Deposit : Route()
 }
 
 fun Route.toNavString(): String = when (this) {
@@ -31,4 +37,6 @@ fun Route.toNavString(): String = when (this) {
     is Route.ChatDetail -> "chat_detail/${chatId}/${chatName}"
     is Route.NewChat -> "new_chat"
     is Route.Detail -> "detail/${id}"
+//    is Route.Withdraw -> "withdraw"
+//    is Route.Deposit -> "deposit"
 }

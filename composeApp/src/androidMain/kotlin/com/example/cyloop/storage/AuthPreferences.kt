@@ -23,4 +23,13 @@ object AuthPreferences {
             preferences[BIOMETRIC_ENABLED] = enabled
         }
     }
+
+    suspend fun getPassword(context: android.content.Context): String? {
+        // Implement password retrieval logic here
+        // For SharedPreferences:
+        val prefs = context.getSharedPreferences("auth_prefs", android.content.Context.MODE_PRIVATE)
+        return prefs.getString("user_password", null)
+
+        // Or if using EncryptedSharedPreferences, retrieve accordingly
+    }
 }

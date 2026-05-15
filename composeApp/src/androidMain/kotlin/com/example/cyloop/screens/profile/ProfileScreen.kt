@@ -44,7 +44,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.cyloop.screens.profile.ProfileMenuItem
 //import com.example.cyloop.rememberNavController
@@ -70,10 +73,17 @@ fun ProfileScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF5F5F5))
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFFE8F5E9),  // Top
+                            Color(0xFFE3F2FD)   // Bottom
+                        )
+                    )
+                )
         ) {
             // Header Section with QR Code
-            ProfileHeaderWithQR(
+            ProfileHeaderWithQRElegant(
                 userName = userName,
                 userBalance = userBalance,
                 walletAddress = walletAddress,
@@ -88,10 +98,10 @@ fun ProfileScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White, RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                    .background(Color.Transparent, RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
                     .padding(vertical = 8.dp)
             ) {
-                ProfileMenuItem(
+                ProfileMenuItemModernSurface(
                     icon = Icons.Default.Lock,
                     title = "Passcode Lock",
                     onClick = onPasscodeLockClick
@@ -103,8 +113,8 @@ fun ProfileScreen(
                     color = Color(0xFFEEEEEE)
                 )
 
-                ProfileMenuItem(
-                    icon = Icons.Default.List,
+                ProfileMenuItemModernSurface(
+                    icon = Icons.AutoMirrored.Filled.List,
                     title = "Manage Logs",
                     onClick = onManageLogsClick
                 )
@@ -115,7 +125,7 @@ fun ProfileScreen(
                     color = Color(0xFFEEEEEE)
                 )
 
-                ProfileMenuItem(
+                ProfileMenuItemModernSurface(
                     icon = Icons.Default.Publish,
                     title = "Export Wallet",
                     onClick = onExportWalletClick
@@ -127,8 +137,8 @@ fun ProfileScreen(
                     color = Color(0xFFEEEEEE)
                 )
 
-                ProfileMenuItem(
-                    icon = Icons.Default.Logout,
+                ProfileMenuItemModernSurface(
+                    icon = Icons.AutoMirrored.Filled.Logout,
                     title = "Logout",
                     onClick = onLogoutClick
                 )

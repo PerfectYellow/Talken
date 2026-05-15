@@ -1,6 +1,8 @@
 package com.example.cyloop.screens.wallet
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -65,6 +67,9 @@ fun WalletScreen(
     var uiState by remember { mutableStateOf<WalletUiState>(WalletUiState.Success(emptyList(), emptyList()))}
     var isRefreshing by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
+    
+    // State for segmented control: "wallet", "withdraw", or "deposit"
+    var selectedTab by remember { mutableStateOf("withdraw") }
 
     // Load data on first composition
     LaunchedEffect(Unit) {
@@ -96,11 +101,10 @@ fun WalletScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Custom Header with title and settings button
-            Box(
+            // Custom Header with title, segmented control, and settings button
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-//                    .background(Color.White.copy(alpha = 0.95f))
                     .background(Color.Transparent)
                     .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
@@ -127,33 +131,58 @@ fun WalletScreen(
                         )
                     }
                 }
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                // Segmented Control
+                SegmentedControlPremium(
+                    selectedTab = selectedTab,
+                    onTabSelected = { tab ->
+                        selectedTab = tab
+                    }
+                )
             }
 
-            // Main Content
-            SwipeRefresh(
-                isRefreshing = isRefreshing,
-                onRefresh = { refreshBalances() },
-                modifier = Modifier.fillMaxSize()
-            ) {
-                when (uiState) {
-                    is WalletUiState.Loading -> LoadingState()
-                    is WalletUiState.Success -> {
-                        val successState = uiState as WalletUiState.Success
-                        WalletContent(
-                            balances = successState.balances,
-                            transactions = successState.transactions,
-                            onWithdrawClick = onWithdrawClick,
-                            onDepositClick = onDepositClick
-                        )
-                    }
-                    is WalletUiState.Error -> {
-                        val errorState = uiState as WalletUiState.Error
-                        ErrorState(
-                            message = errorState.message,
-                            onRetry = { refreshBalances() }
-                        )
-                    }
-                    is WalletUiState.Empty -> EmptyState()
+            // Main Content based on selected tab
+            when (selectedTab) {
+//                "wallet" -> {
+//                    SwipeRefresh(
+//                        isRefreshing = isRefreshing,
+//                        onRefresh = { refreshBalances() },
+//                        modifier = Modifier.fillMaxSize()
+//                    ) {
+//                        when (uiState) {
+//                            is WalletUiState.Loading -> LoadingState()
+//                            is WalletUiState.Success -> {
+//                                val successState = uiState as WalletUiState.Success
+//                                WalletContent(
+//                                    balances = successState.balances,
+//                                    transactions = successState.transactions,
+//                                    onWithdrawClick = { selectedTab = "withdraw" },
+//                                    onDepositClick = { selectedTab = "deposit" }
+//                                )
+//                            }
+//                            is WalletUiState.Error -> {
+//                                val errorState = uiState as WalletUiState.Error
+//                                ErrorState(
+//                                    message = errorState.message,
+//                                    onRetry = { refreshBalances() }
+//                                )
+//                            }
+//                            is WalletUiState.Empty -> EmptyState()
+//                        }
+//                    }
+//                }
+                "withdraw" -> {
+                    WithdrawScreenCardDesign(
+                        onBackClick = { selectedTab = "wallet" },
+                        {},
+                    )
+                }
+                "deposit" -> {
+                    DepositScreen(
+                        onBackClick = { selectedTab = "wallet" }
+                    )
                 }
             }
         }
@@ -597,6 +626,257 @@ fun SwipeRefresh(
                     color = MaterialTheme.colorScheme.primary
                 )
             }
+        }
+    }
+}
+@Composable
+fun SegmentedControlPremium(
+    selectedTab: String,
+    onTabSelected: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val tabs = listOf("withdraw" to "Withdraw", "deposit" to "Deposit")
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(60.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(
+                Brush.horizontalGradient(
+                    colors = listOf(
+                        Color(0xFFFFFFFF).copy(alpha = 0.2f),
+                        Color(0xFFFFFFFF).copy(alpha = 0.1f)
+                    )
+                )
+            )
+            .background(Color.White.copy(alpha = 0.3f))
+            .border(
+                width = 1.dp,
+                color = Color.White.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(20.dp)
+            )
+            .padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        tabs.forEach { (key, label) ->
+            val isSelected = selectedTab == key
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(52.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(
+                        if (isSelected)
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFF1976D2),
+                                    Color(0xFF42A5F5)
+                                )
+                            )
+                        else
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Transparent)
+                            )
+                    )
+                    .clickable { onTabSelected(key) },
+                contentAlignment = Alignment.Center
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = if (key == "withdraw")
+                            Icons.Default.ArrowUpward
+                        else
+                            Icons.Default.ArrowDownward,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = if (isSelected) Color.White else Color(0xFF546E7A)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = label,
+                        fontSize = 14.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        color = if (isSelected) Color.White else Color(0xFF546E7A)
+                    )
+                }
+            }
+        }
+    }
+}
+@Composable
+fun SegmentedControlPill(
+    selectedTab: String,
+    onTabSelected: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val tabs = listOf("withdraw" to "Withdraw", "deposit" to "Deposit")
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(32.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFF5F7FA)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            tabs.forEach { (key, label) ->
+                val isSelected = selectedTab == key
+
+                Button(
+                    onClick = { onTabSelected(key) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isSelected)
+                            Color(0xFF1976D2)
+                        else
+                            Color.Transparent,
+                        contentColor = if (isSelected)
+                            Color.White
+                        else
+                            Color(0xFF546E7A)
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(
+                        defaultElevation = if (isSelected) 2.dp else 0.dp,
+                        pressedElevation = 2.dp
+                    )
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = if (key == "withdraw")
+                                Icons.Default.ArrowUpward
+                            else
+                                Icons.Default.ArrowDownward,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = if (isSelected) Color.White else Color(0xFF1976D2)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = label,
+                            fontSize = 14.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Withdraw Screen Content
+@Composable
+fun WithdrawScreenContent(
+    onBackClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.ArrowUpward,
+            contentDescription = null,
+            modifier = Modifier.size(64.dp),
+            tint = Color(0xFF1976D2)
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Text(
+            text = "Withdraw",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF0D47A1)
+        )
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Text(
+            text = "Withdraw functionality will be implemented here",
+            fontSize = 14.sp,
+            color = Color.Gray,
+            textAlign = TextAlign.Center
+        )
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        Button(
+            onClick = onBackClick,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF1976D2)
+            )
+        ) {
+            Text("Back to Wallet")
+        }
+    }
+}
+
+// Deposit Screen Content
+@Composable
+fun DepositScreenContent(
+    onBackClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.ArrowDownward,
+            contentDescription = null,
+            modifier = Modifier.size(64.dp),
+            tint = Color(0xFF4CAF50)
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Text(
+            text = "Deposit",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF0D47A1)
+        )
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Text(
+            text = "Deposit functionality will be implemented here",
+            fontSize = 14.sp,
+            color = Color.Gray,
+            textAlign = TextAlign.Center
+        )
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        Button(
+            onClick = onBackClick,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF1976D2)
+            )
+        ) {
+            Text("Back to Wallet")
         }
     }
 }
