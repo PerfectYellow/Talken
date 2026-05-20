@@ -24,11 +24,14 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshState
-import androidx.compose.material3.pulltorefresh.pullToRefresh
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,10 +40,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 import java.util.Date
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import com.example.cyloop.R
+import cyloop.composeapp.generated.resources.Res
+import cyloop.composeapp.generated.resources.person1
+import cyloop.composeapp.generated.resources.person2
+import cyloop.composeapp.generated.resources.person3
+import org.jetbrains.compose.resources.painterResource
 
 data class Chat(
     val id: String,
@@ -108,6 +121,10 @@ fun ChatScreen(
         )
     }
 
+    var isRefreshing by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+    val pullToRefreshState = rememberPullToRefreshState()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -135,15 +152,45 @@ fun ChatScreen(
                 )
             }
 
-            // Scrollable chat list
-            LazyColumn(
+            // Pull-to-refresh enabled chat list
+            PullToRefreshBox(
+                state = pullToRefreshState,
+                isRefreshing = isRefreshing,
+                onRefresh = {
+                    coroutineScope.launch {
+                        isRefreshing = true
+                        // Simulate network request or data refresh
+                        delay(1500) // Replace with actual refresh logic
+
+                        // Example: Update chat times to simulate refresh
+                        val updatedChats = chats.mapIndexed { index, chat ->
+                            if (index == 0) {
+                                chat.copy(
+                                    lastMessage = "Just refreshed! ✅",
+                                    time = Date(),
+                                    unreadCount = (chat.unreadCount + 1) % 10
+                                )
+                            } else {
+                                chat
+                            }
+                        }
+                        chats.clear()
+                        chats.addAll(updatedChats)
+
+                        isRefreshing = false
+                    }
+                },
                 modifier = Modifier.fillMaxSize()
             ) {
-                items(chats) { chat ->
-                    ChatCell(
-                        chat = chat,
-                        onClick = { onChatClick(chat.id, chat.name) }
-                    )
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(chats) { chat ->
+                        ChatCell(
+                            chat = chat,
+                            onClick = { onChatClick(chat.id, chat.name) }
+                        )
+                    }
                 }
             }
         }
@@ -195,12 +242,18 @@ fun ChatCell(
                     .background(chat.avatarColor),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = chat.name.take(1).uppercase(),
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
+                Image(
+                    painter = painterResource(Res.drawable.person1),
+                    contentDescription = chat.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
                 )
+//                Text(
+//                    text = chat.name.take(1).uppercase(),
+//                    fontSize = 20.sp,
+//                    fontWeight = FontWeight.Bold,
+//                    color = Color.White
+//                )
             }
 
             // Online indicator

@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -267,10 +268,10 @@ fun PasscodeLockScreen(
                             }
 
                             if (text != options.last()) {
-                                Divider(
+                                HorizontalDivider(
                                     modifier = Modifier.padding(start = 76.dp),
-                                    color = Color(0xFFF0F0F0),
-                                    thickness = 1.dp
+                                    thickness = 1.dp,
+                                    color = Color(0xFFF0F0F0)
                                 )
                             }
                         }

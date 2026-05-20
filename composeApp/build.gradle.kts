@@ -37,6 +37,8 @@ kotlin {
             implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.7")
             implementation("androidx.biometric:biometric:1.4.0-alpha02")
 
+            implementation("io.coil-kt.coil3:coil-compose:3.4.0")
+
             implementation(libs.ktor.client.android)
 
 //            implementation(libs.koin.androidx.compose)
