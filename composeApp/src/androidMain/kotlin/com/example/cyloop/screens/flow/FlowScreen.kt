@@ -161,7 +161,7 @@ fun TopBar() {
 //                    )
 //                )
 //            )
-            .statusBarsPadding()
+//            .statusBarsPadding()
 //            .shadow(4.dp)
             .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
