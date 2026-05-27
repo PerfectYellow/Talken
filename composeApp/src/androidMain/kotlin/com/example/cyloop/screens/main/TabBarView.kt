@@ -1,14 +1,23 @@
 package com.example.cyloop.screens.main
 
-import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -16,7 +25,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -24,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.cyloop.screens.chat.ChatScreen
 import com.example.cyloop.screens.flow.FlowScreen
@@ -67,8 +81,9 @@ fun TabBarView(
     }
 
     Scaffold(
+        modifier = Modifier.background(Color.Transparent),
         bottomBar = {
-            BottomNavigationBar(
+            FloatingBottomNavigationBar(
                 selectedScreen = selectedScreen,
                 onScreenSelected = {
                     selectedScreen = it
@@ -79,6 +94,12 @@ fun TabBarView(
     ) { paddingValues ->
         Box(
             modifier = Modifier
+                .background(
+                    Color(0xFFE3F2FD)
+//                    Brush.verticalGradient(
+//                        colors = listOf(Color(0xFFE3F2FD), Color(0xFFBBDEFB))
+//                    )
+                )
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
@@ -108,48 +129,93 @@ fun TabBarView(
 }
 
 @Composable
-fun BottomNavigationBar(
+fun FloatingBottomNavigationBar(
     selectedScreen: BottomNavScreen,
     onScreenSelected: (BottomNavScreen) -> Unit
 ) {
-    NavigationBar(
-        containerColor = Color.White,
-        tonalElevation = 8.dp
-    ) {
-        val items = listOf(
-            BottomNavScreen.Chats,
-            BottomNavScreen.Flow,
-            BottomNavScreen.Wallet,
-            BottomNavScreen.Profile,
-        )
+    val items = listOf(
+        BottomNavScreen.Chats,
+        BottomNavScreen.Flow,
+        BottomNavScreen.Wallet,
+        BottomNavScreen.Profile,
+    )
 
-        items.forEach { screen ->
-            NavigationBarItem(
-                selected = selectedScreen == screen,
-                onClick = { onScreenSelected(screen) },
-                icon = {
-                    Icon(
-                        imageVector = if (selectedScreen == screen) screen.selectedIcon else screen.icon,
-                        contentDescription = screen.title,
-                        modifier = Modifier.size(24.dp)
-                    )
-                },
-                label = {
-                    Text(
-                        text = screen.title,
-                        fontSize = 12.sp,
-                        fontWeight = if (selectedScreen == screen) FontWeight.Bold else FontWeight.Normal
-                    )
-                },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color(0xFF1976D2),
-                    selectedTextColor = Color(0xFF1976D2),
-                    unselectedIconColor = Color.Gray,
-                    unselectedTextColor = Color.Gray,
-                    indicatorColor = Color(0xFFE3F2FD)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 14.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            modifier = Modifier
+                .shadow(
+                    elevation = 20.dp,
+                    shape = RoundedCornerShape(40.dp),
+                    spotColor = Color.Black.copy(alpha = 0.2f)
                 )
-            )
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.92f),
+                            Color.White.copy(alpha = 0.82f)
+                        )
+                    ),
+                    shape = RoundedCornerShape(40.dp)
+                )
+                .border(
+                    width = 0.5.dp,
+                    color = Color.White.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(40.dp)
+                )
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            items.forEach { screen ->
+                FloatingNavItem(
+                    screen = screen,
+                    isSelected = selectedScreen == screen,
+                    onClick = { onScreenSelected(screen) }
+                )
+            }
         }
+    }
+}
+
+@Composable
+fun FloatingNavItem(
+    screen: BottomNavScreen,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val contentColor = if (isSelected) Color(0xFF007AFF) else Color(0xFF8E8E93)
+    val backgroundColor = if (isSelected) Color(0xFF007AFF).copy(alpha = 0.12f) else Color.Transparent
+    
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(backgroundColor)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 26.dp, vertical = 8.dp)
+    ) {
+        Icon(
+            imageVector = if (isSelected) screen.selectedIcon else screen.icon,
+            contentDescription = screen.title,
+            tint = contentColor,
+            modifier = Modifier.size(24.dp)
+        )
+        
+        Spacer(modifier = Modifier.height(4.dp))
+        
+        Text(
+            text = screen.title,
+            fontSize = 10.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+            color = contentColor,
+            letterSpacing = 0.2.sp
+        )
     }
 }
 

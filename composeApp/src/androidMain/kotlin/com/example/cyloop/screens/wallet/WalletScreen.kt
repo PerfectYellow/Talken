@@ -94,7 +94,10 @@ fun WalletScreen(
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Color(0xFFE3F2FD), Color(0xFFBBDEFB))
+                    colors = listOf(
+                        Color(0xFFE8F5E9),  // Top
+                        Color(0xFFE3F2FD)   // Bottom
+                    )
                 )
             )
     ) {
