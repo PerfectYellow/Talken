@@ -1,6 +1,9 @@
 package com.example.cyloop.screens.wallet
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,8 +21,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -68,7 +74,7 @@ private val client = HttpClient {
             isLenient = true
         })
     }
-    
+
     install(HttpTimeout) {
         requestTimeoutMillis = 30000
         connectTimeoutMillis = 15000
@@ -205,9 +211,9 @@ fun WalletScreen(
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
-                            
+
                             Spacer(modifier = Modifier.height(10.dp))
-                            
+
                             Text(
                                 text = "$${formatPrice(coin.current_price)}",
                                 color = Color.White,
@@ -255,13 +261,15 @@ fun WalletScreen(
                 }
             }
 
-            Text(
-                text = "Market Trends",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.ExtraBold,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-                color = Color(0xFF1A237E)
-            )
+//            Text(
+//                text = "Market Trends",
+//                fontSize = 20.sp,
+//                fontWeight = FontWeight.ExtraBold,
+//                modifier = Modifier
+//                    .padding(horizontal = 24.dp)
+//                    .padding(bottom = 8.dp),
+//                color = Color(0xFF1A237E)
+//            )
 
             // Part 2: Middle Section - Scrollable List
             Box(modifier = Modifier.weight(1f)) {
@@ -331,13 +339,13 @@ fun WalletScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
-                    .padding(vertical = 3.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(vertical = 0.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp)
+                        .height(40.dp)
                         .background(Color(0xFF1565C0), RoundedCornerShape(16.dp))
                         .clip(RoundedCornerShape(16.dp)),
                     verticalAlignment = Alignment.CenterVertically
@@ -383,7 +391,7 @@ fun WalletScreen(
 
                 Button(
                     onClick = onPaymentClick,
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    modifier = Modifier.fillMaxWidth().height(40.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
                 ) {
@@ -437,44 +445,171 @@ fun CoinChart(
     modifier: Modifier = Modifier,
     color: Color = Color.White
 ) {
-    Canvas(modifier = modifier) {
-        if (data.size < 2) return@Canvas
+    if (data.size < 2) {
+        Box(modifier = modifier, contentAlignment = Alignment.Center) {
+            Text(
+                text = "No historical data available",
+                color = color.copy(alpha = 0.5f),
+                fontSize = 12.sp
+            )
+        }
+        return
+    }
 
-        val min = data.minOrNull() ?: 0.0
-        val max = data.maxOrNull() ?: 0.0
-        val range = (max - min).coerceAtLeast(0.000001)
-        val width = size.width
-        val height = size.height
+    val animationProgress = remember { Animatable(0f) }
+    LaunchedEffect(data) {
+        animationProgress.snapTo(0f)
+        animationProgress.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 1200, easing = FastOutSlowInEasing)
+        )
+    }
 
-        val path = Path()
-        data.forEachIndexed { index, price ->
-            val x = index * (width / (data.size - 1))
-            val y = height - ((price - min) / range * height).toFloat()
-            if (index == 0) {
-                path.moveTo(x, y)
-            } else {
-                path.lineTo(x, y)
+    var selectedIndex by remember { mutableStateOf<Int?>(null) }
+
+    Box(modifier = modifier.fillMaxSize()) {
+        Canvas(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(data) {
+                    detectDragGestures(
+                        onDragStart = { offset ->
+                            selectedIndex = (offset.x / (size.width / (data.size - 1))).toInt().coerceIn(0, data.size - 1)
+                        },
+                        onDrag = { change, _ ->
+                            selectedIndex = (change.position.x / (size.width / (data.size - 1))).toInt().coerceIn(0, data.size - 1)
+                        },
+                        onDragEnd = { selectedIndex = null },
+                        onDragCancel = { selectedIndex = null }
+                    )
+                }
+                .pointerInput(data) {
+                    detectTapGestures(
+                        onPress = { offset ->
+                            selectedIndex = (offset.x / (size.width / (data.size - 1))).toInt().coerceIn(0, data.size - 1)
+                            tryAwaitRelease()
+                            selectedIndex = null
+                        }
+                    )
+                }
+        ) {
+            val min = data.minOrNull() ?: 0.0
+            val max = data.maxOrNull() ?: 0.0
+            val range = (max - min).coerceAtLeast(0.000001)
+            val width = size.width
+            val height = size.height
+            val spacing = width / (data.size - 1)
+
+            val points = data.mapIndexed { index, price ->
+                Offset(
+                    x = index * spacing,
+                    y = height - ((price - min) / range * height).toFloat()
+                )
+            }
+
+            val path = Path().apply {
+                if (points.isNotEmpty()) {
+                    moveTo(points[0].x, points[0].y)
+                    for (i in 1 until points.size) {
+                        val p0 = points[i - 1]
+                        val p1 = points[i]
+                        // Smooth curves using cubic splines
+                        cubicTo(
+                            x1 = (p0.x + p1.x) / 2, y1 = p0.y,
+                            x2 = (p0.x + p1.x) / 2, y2 = p1.y,
+                            x3 = p1.x, y3 = p1.y
+                        )
+                    }
+                }
+            }
+
+            val fillPath = Path().apply {
+                addPath(path)
+                lineTo(width, height)
+                lineTo(0f, height)
+                close()
+            }
+
+            // Clip the drawing for entrance animation
+            clipRect(right = width * animationProgress.value) {
+                // Background Gradient Fill
+                drawPath(
+                    path = fillPath,
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            color.copy(alpha = 0.35f),
+                            color.copy(alpha = 0.1f),
+                            Color.Transparent
+                        )
+                    )
+                )
+
+                // Main Smooth Line
+                drawPath(
+                    path = path,
+                    color = color,
+                    style = Stroke(
+                        width = 3.dp.toPx(),
+                        cap = StrokeCap.Round,
+                        join = StrokeJoin.Round
+                    )
+                )
+
+                // Last Point Pulse Effect (when not interacting)
+                if (selectedIndex == null && points.isNotEmpty() && animationProgress.value > 0.99f) {
+                    val lastPoint = points.last()
+                    drawCircle(color, 4.dp.toPx(), lastPoint)
+                    drawCircle(color.copy(alpha = 0.2f), 10.dp.toPx(), lastPoint)
+                }
+            }
+
+            // Interaction Overlays
+            selectedIndex?.let { index ->
+                val point = points[index]
+                
+                // Vertical guide line
+                drawLine(
+                    color = color.copy(alpha = 0.4f),
+                    start = Offset(point.x, 0f),
+                    end = Offset(point.x, height),
+                    strokeWidth = 1.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(15f, 15f))
+                )
+
+                // Highlighted data point
+                drawCircle(
+                    color = Color.White.copy(alpha = 0.5f),
+                    radius = 8.dp.toPx(),
+                    center = point
+                )
+                drawCircle(
+                    color = color,
+                    radius = 4.dp.toPx(),
+                    center = point
+                )
             }
         }
 
-        drawPath(
-            path = path,
-            color = color,
-            style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
-        )
-
-        val fillPath = Path().apply {
-            addPath(path)
-            lineTo(width, height)
-            lineTo(0f, height)
-            close()
+        // Floating Price Tooltip during interaction
+        selectedIndex?.let { index ->
+            val price = data[index]
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 4.dp)
+                    .shadow(8.dp, RoundedCornerShape(8.dp)),
+                color = Color.Black.copy(alpha = 0.8f),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    text = "$${formatPrice(price)}",
+                    color = Color.White,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
-        drawPath(
-            path = fillPath,
-            brush = Brush.verticalGradient(
-                colors = listOf(color.copy(alpha = 0.2f), Color.Transparent)
-            )
-        )
     }
 }
 

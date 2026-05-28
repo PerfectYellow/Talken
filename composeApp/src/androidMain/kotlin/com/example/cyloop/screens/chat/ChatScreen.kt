@@ -52,7 +52,7 @@ import java.util.Date
 import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
 import cyloop.composeapp.generated.resources.Res
-import cyloop.composeapp.generated.resources.person3
+import cyloop.composeapp.generated.resources.person2
 import org.jetbrains.compose.resources.painterResource
 
 data class Chat(
@@ -261,7 +261,7 @@ fun ChatCell(
                 contentAlignment = Alignment.Center
             ) {
                 Image(
-                    painter = painterResource(Res.drawable.person3),
+                    painter = painterResource(Res.drawable.person2),
                     contentDescription = chat.name,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
