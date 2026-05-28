@@ -93,7 +93,8 @@ private const val API_KEY = "CG-Z1ASMjuxEc3b5c5Z5Fyjvj3K"
 @Composable
 fun WalletScreen(
     onWalletDetailClick: () -> Unit = {},
-    onPaymentClick: () -> Unit = {}
+    onPaymentClick: () -> Unit = {},
+    bottomPadding: androidx.compose.ui.unit.Dp = 0.dp
 ) {
     var coins by remember { mutableStateOf<List<Coin>>(emptyList()) }
     var selectedCoin by remember { mutableStateOf<Coin?>(null) }
@@ -163,7 +164,7 @@ fun WalletScreen(
             .fillMaxSize()
             .background(backgroundGradient)
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
             // Part 1: Top Section - Chart Card
             Card(
                 modifier = Modifier
@@ -279,9 +280,12 @@ fun WalletScreen(
                     }
                 } else if (errorMessage != null && coins.isEmpty()) {
                     Column(
-                        modifier = Modifier.fillMaxSize().padding(32.dp),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(32.dp)
+                            .verticalScroll(rememberScrollState()),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+//                        verticalArrangement = Arrangement.Center
                     ) {
                         Icon(Icons.Default.ErrorOutline, contentDescription = null, modifier = Modifier.size(48.dp), tint = Color.Red)
                         Spacer(modifier = Modifier.height(16.dp))
@@ -290,6 +294,7 @@ fun WalletScreen(
                         Button(onClick = { isLoading = true }) {
                             Text("Retry")
                         }
+                        Spacer(modifier = Modifier.height(200.dp))
                     }
                 } else {
                     PullToRefreshBox(
@@ -320,7 +325,7 @@ fun WalletScreen(
                                     scaleY = scale
                                     transformOrigin = TransformOrigin(0.5f, 0f)
                                 },
-                            contentPadding = PaddingValues(bottom = 16.dp)
+                            contentPadding = PaddingValues(bottom = bottomPadding + 110.dp)
                         ) {
                             items(coins) { coin ->
                                 CoinListItem(
@@ -333,72 +338,77 @@ fun WalletScreen(
                     }
                 }
             }
+        }
 
-            // Part 3: Bottom Section - Full Width Buttons
-            Column(
+        // Part 3: Bottom Section - Full Width Buttons (Floating Overlay)
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = bottomPadding + 16.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .padding(vertical = 0.dp),
-                verticalArrangement = Arrangement.spacedBy(5.dp)
+                    .height(40.dp)
+                    .shadow(8.dp, RoundedCornerShape(16.dp))
+                    .background(Color(0xFF1565C0), RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(16.dp)),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(40.dp)
-                        .background(Color(0xFF1565C0), RoundedCornerShape(16.dp))
-                        .clip(RoundedCornerShape(16.dp)),
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clickable { onWalletDetailClick() }
+                        .padding(start = 16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .clickable { onWalletDetailClick() }
-                            .padding(start = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = Color.White)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Wallet", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
-
-                        Spacer(modifier = Modifier.weight(1f))
-
-                        Text(
-                            text = if (isBalanceVisible) "$$userBalance" else "$ *****",
-                            modifier = Modifier.blur(if (isBalanceVisible) 0.dp else 4.dp),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            color = Color.White
-                        )
-                    }
-
-                    IconButton(
-                        onClick = {
-                            scope.launch {
-                                AuthPreferences.setBalanceVisible(context, !isBalanceVisible)
-                            }
-                        },
-                        modifier = Modifier.padding(end = 8.dp).size(40.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (isBalanceVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = "Toggle Balance",
-                            tint = Color.White.copy(alpha = 0.8f)
-                        )
-                    }
-                }
-
-                Button(
-                    onClick = onPaymentClick,
-                    modifier = Modifier.fillMaxWidth().height(40.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
-                ) {
-                    Icon(Icons.Default.Payments, contentDescription = null)
+                    Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = Color.White)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Payment", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("Wallet", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    Text(
+                        text = if (isBalanceVisible) "$$userBalance" else "$ *****",
+                        modifier = Modifier.blur(if (isBalanceVisible) 0.dp else 4.dp),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = Color.White
+                    )
                 }
+
+                IconButton(
+                    onClick = {
+                        scope.launch {
+                            AuthPreferences.setBalanceVisible(context, !isBalanceVisible)
+                        }
+                    },
+                    modifier = Modifier.padding(end = 8.dp).size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isBalanceVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                        contentDescription = "Toggle Balance",
+                        tint = Color.White.copy(alpha = 0.8f)
+                    )
+                }
+            }
+
+            Button(
+                onClick = onPaymentClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(40.dp)
+                    .shadow(8.dp, RoundedCornerShape(16.dp)),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
+            ) {
+                Icon(Icons.Default.Payments, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Payment", fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
         }
     }

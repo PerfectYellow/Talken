@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -68,7 +69,8 @@ data class Chat(
 @Composable
 fun ChatScreen(
     onChatClick: (String, String) -> Unit,
-    onNewChatClick: () -> Unit
+    onNewChatClick: () -> Unit,
+    bottomPadding: androidx.compose.ui.unit.Dp = 0.dp
 ) {
     // Sample data - in real app, this would come from ViewModel
     val chats = remember {
@@ -138,7 +140,7 @@ fun ChatScreen(
             )
     ) {
         Column(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize().statusBarsPadding()
         ) {
             // Header with title
             Box(
@@ -194,7 +196,7 @@ fun ChatScreen(
                             scaleY = scale
                             transformOrigin = TransformOrigin(0.5f, 0f)
                         },
-                    contentPadding = PaddingValues(16.dp),
+                    contentPadding = PaddingValues(top = 16.dp, start = 16.dp, end = 16.dp, bottom = bottomPadding + 16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(chats) { chat ->
@@ -212,7 +214,7 @@ fun ChatScreen(
             onClick = onNewChatClick,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(16.dp)
+                .padding(bottom = bottomPadding + 16.dp, end = 16.dp)
                 .size(56.dp),
             shape = CircleShape,
             containerColor = Color(0xFF2196F3),

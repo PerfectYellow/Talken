@@ -82,25 +82,16 @@ fun TabBarView(
         mutableStateOf(BottomNavScreen.fromRoute(initialTab)) 
     }
 
-    Scaffold(
-        modifier = Modifier.background(Color.Transparent),
-        bottomBar = {
-            FloatingBottomNavigationBar(
-                selectedScreen = selectedScreen,
-                onScreenSelected = {
-                    selectedScreen = it
-                    onTabSelected(it.route)
-                }
-            )
-        }
-    ) { paddingValues ->
+    val bottomBarHeight = 90.dp
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFE3F2FD))
+    ) {
+        // Content area
         Box(
-            modifier = Modifier
-                .background(
-                    Color(0xFFE3F2FD)
-                )
-                .fillMaxSize()
-                .padding(paddingValues)
+            modifier = Modifier.fillMaxSize()
         ) {
             when (selectedScreen) {
                 BottomNavScreen.Profile -> ProfileScreen(
@@ -114,18 +105,38 @@ fun TabBarView(
                     onManageLogsClick = {},
                     onCopyAddressClick = {},
                     onExportWalletClick = {},
-                    onPasscodeLockClick = onNavigateToPasscodeLock
+                    onPasscodeLockClick = onNavigateToPasscodeLock,
+                    bottomPadding = bottomBarHeight
                 )
                 BottomNavScreen.Wallet -> WalletScreen(
                     onWalletDetailClick = onNavigateToWalletDetail,
-                    onPaymentClick = onNavigateToPayment
+                    onPaymentClick = onNavigateToPayment,
+                    bottomPadding = bottomBarHeight
                 )
-                BottomNavScreen.Flow -> FlowScreen()
+                BottomNavScreen.Flow -> FlowScreen(
+                    bottomPadding = bottomBarHeight
+                )
                 BottomNavScreen.Chats -> ChatScreen(
                     onChatClick = onNavigateToChatDetail,
-                    onNewChatClick = onNavigateToNewChat
+                    onNewChatClick = onNavigateToNewChat,
+                    bottomPadding = bottomBarHeight
                 )
             }
+        }
+
+        // Floating Bottom Navigation Bar
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+        ) {
+            FloatingBottomNavigationBar(
+                selectedScreen = selectedScreen,
+                onScreenSelected = {
+                    selectedScreen = it
+                    onTabSelected(it.route)
+                }
+            )
         }
     }
 }

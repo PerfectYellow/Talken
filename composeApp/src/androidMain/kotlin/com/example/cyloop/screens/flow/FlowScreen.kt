@@ -75,7 +75,8 @@ data class Stats(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FlowScreen(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    bottomPadding: androidx.compose.ui.unit.Dp = 0.dp
 ) {
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
@@ -136,7 +137,9 @@ fun FlowScreen(
             .background(backgroundGradient)
     ) {
         Column(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
         ) {
             // Header with title - using a slightly deeper but still light blue
             Surface(
@@ -225,7 +228,7 @@ fun FlowScreen(
                         LazyColumn(
                             state = listState,
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(vertical = 8.dp),
+                            contentPadding = PaddingValues(top = 8.dp, bottom = bottomPadding + 16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             items(feedItems) { post ->
