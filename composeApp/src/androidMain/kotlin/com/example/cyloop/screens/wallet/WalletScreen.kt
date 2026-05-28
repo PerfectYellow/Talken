@@ -1,894 +1,570 @@
 package com.example.cyloop.screens.wallet
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
+import coil3.compose.AsyncImage
+import com.example.cyloop.storage.AuthPreferences
+import com.example.cyloop.screens.main.TabBarView
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.engine.*
+import io.ktor.client.plugins.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.request.*
+import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import coil3.compose.SubcomposeAsyncImage
+import coil3.compose.SubcomposeAsyncImageContent
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 
-// Data models
-data class TokenBalance(
-    val symbol: String,
-    val amount: Double,
-    val iconRes: Int? = null
-)
-
-data class Transaction(
+@Serializable
+data class Coin(
     val id: String,
-    val title: String,
-    val date: String,
-    val amount: Double,
-    val isPositive: Boolean,
-    val type: TransactionType
+    val symbol: String,
+    val name: String,
+    val image: String,
+    val current_price: Double,
+    val price_change_percentage_24h: Double? = 0.0
 )
 
-enum class TransactionType {
-    SEND, RECEIVE, SWAP, AIRDROP
+@Serializable
+data class MarketChart(
+    val prices: List<List<Double>>
+)
+
+private val client = HttpClient {
+    install(ContentNegotiation) {
+        json(Json {
+            ignoreUnknownKeys = true
+            prettyPrint = true
+            isLenient = true
+        })
+    }
+    
+    install(HttpTimeout) {
+        requestTimeoutMillis = 30000
+        connectTimeoutMillis = 15000
+        socketTimeoutMillis = 15000
+    }
+
+    defaultRequest {
+        header("Accept", "application/json")
+        header("User-Agent", "Ktor client")
+    }
 }
 
-sealed class WalletUiState {
-    object Loading : WalletUiState()
-    data class Success(
-        val balances: List<TokenBalance>,
-        val transactions: List<Transaction>
-    ) : WalletUiState()
-    data class Error(val message: String) : WalletUiState()
-    object Empty : WalletUiState()
-}
+private const val API_KEY = "CG-Z1ASMjuxEc3b5c5Z5Fyjvj3K"
 
-// Main Wallet Screen with Custom Top Bar
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WalletScreen(
-    onWithdrawClick: () -> Unit = {},
-    onDepositClick: () -> Unit = {},
-    onSettingsClick: () -> Unit = {}
+    onWalletDetailClick: () -> Unit = {},
+    onPaymentClick: () -> Unit = {}
 ) {
-    // Local state management instead of ViewModel
-    var uiState by remember { mutableStateOf<WalletUiState>(WalletUiState.Success(emptyList(), emptyList()))}
-    var isRefreshing by remember { mutableStateOf(false) }
-    val coroutineScope = rememberCoroutineScope()
-    
-    // State for segmented control: "wallet", "withdraw", or "deposit"
-    var selectedTab by remember { mutableStateOf("withdraw") }
+    var coins by remember { mutableStateOf<List<Coin>>(emptyList()) }
+    var selectedCoin by remember { mutableStateOf<Coin?>(null) }
+    var chartData by remember { mutableStateOf<List<Double>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var isChartLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // Load data on first composition
+    val scope = rememberCoroutineScope()
+    var isRefreshing by remember { mutableStateOf(false) }
+    val pullToRefreshState = rememberPullToRefreshState()
+
+    val context = LocalContext.current
+    val isBalanceVisible by AuthPreferences.isBalanceVisible(context).collectAsState(initial = true)
+    val userBalance = "1,234.56"
+
+    val backgroundGradient = Brush.verticalGradient(
+        colors = listOf(
+            Color(0xFFE8F5E9),
+            Color(0xFFE3F2FD)
+        )
+    )
+
     LaunchedEffect(Unit) {
-        loadWalletData { newState ->
-            uiState = newState
+        if (isLoading) {
+            refreshCoins(
+                onSuccess = { result ->
+                    coins = result
+                    if (selectedCoin == null) {
+                        selectedCoin = result.firstOrNull()
+                    }
+                },
+                onError = { msg ->
+                    errorMessage = msg
+                },
+                onFinished = {
+                    isLoading = false
+                }
+            )
         }
     }
 
-    fun refreshBalances() {
-        coroutineScope.launch {
-            isRefreshing = true
-            loadWalletData { newState ->
-                uiState = newState
+    LaunchedEffect(selectedCoin) {
+        selectedCoin?.let { coin ->
+            isChartLoading = true
+            try {
+                val response = client.get("https://api.coingecko.com/api/v3/coins/${coin.id}/market_chart") {
+                    parameter("vs_currency", "usd")
+                    parameter("days", "7")
+                    parameter("x_cg_demo_api_key", API_KEY)
+                }
+                val result = response.body<MarketChart>()
+                if (result.prices.isNotEmpty()) {
+                    chartData = result.prices.map { it[1] }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                chartData = emptyList()
+            } finally {
+                isChartLoading = false
             }
-            delay(500)
-            isRefreshing = false
         }
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFFE8F5E9),  // Top
-                        Color(0xFFE3F2FD)   // Bottom
-                    )
-                )
-            )
+            .background(backgroundGradient)
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            // Custom Header with title, segmented control, and settings button
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Part 1: Top Section - Chart Card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(280.dp)
+                    .padding(16.dp),
+                shape = RoundedCornerShape(24.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(Color(0xFF0D47A1), Color(0xFF1976D2))
+                            )
+                        )
+                        .padding(20.dp)
+                ) {
+                    Column {
+                        selectedCoin?.let { coin ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column {
+                                    Text(
+                                        text = coin.name,
+                                        color = Color.White,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = coin.symbol.uppercase(),
+                                        color = Color.White.copy(alpha = 0.6f),
+                                        fontSize = 14.sp
+                                    )
+                                }
+                                Icon(
+                                    imageVector = Icons.Default.TrendingUp,
+                                    contentDescription = null,
+                                    tint = Color.White.copy(alpha = 0.8f),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                            
+                            Spacer(modifier = Modifier.height(10.dp))
+                            
+                            Text(
+                                text = "$${formatPrice(coin.current_price)}",
+                                color = Color.White,
+                                fontSize = 30.sp,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                            val priceChange = coin.price_change_percentage_24h ?: 0.0
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = if (priceChange >= 0) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
+                                    contentDescription = null,
+                                    tint = if (priceChange >= 0) Color(0xFF81C784) else Color(0xFFF28B82),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "${String.format("%.2f", Math.abs(priceChange))}% (24h)",
+                                    color = if (priceChange >= 0) Color(0xFF81C784) else Color(0xFFF28B82),
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        if (isChartLoading) {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(color = Color.White.copy(alpha = 0.5f))
+                            }
+                        } else if (chartData.isNotEmpty()) {
+                            CoinChart(
+                                data = chartData,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f),
+                                color = Color.White
+                            )
+                        } else if (!isLoading && errorMessage == null) {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text("No chart data", color = Color.White.copy(alpha = 0.5f))
+                            }
+                        }
+                    }
+                }
+            }
+
+            Text(
+                text = "Market Trends",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.ExtraBold,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                color = Color(0xFF1A237E)
+            )
+
+            // Part 2: Middle Section - Scrollable List
+            Box(modifier = Modifier.weight(1f)) {
+                if (isLoading) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = Color(0xFF1976D2))
+                    }
+                } else if (errorMessage != null && coins.isEmpty()) {
+                    Column(
+                        modifier = Modifier.fillMaxSize().padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(Icons.Default.ErrorOutline, contentDescription = null, modifier = Modifier.size(48.dp), tint = Color.Red)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(text = errorMessage!!, textAlign = TextAlign.Center, color = Color.Gray)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = { isLoading = true }) {
+                            Text("Retry")
+                        }
+                    }
+                } else {
+                    PullToRefreshBox(
+                        state = pullToRefreshState,
+                        isRefreshing = isRefreshing,
+                        onRefresh = {
+                            scope.launch {
+                                isRefreshing = true
+                                refreshCoins(
+                                    onSuccess = { result ->
+                                        coins = result
+                                    },
+                                    onError = { /* Keep existing data but maybe show a toast */ },
+                                    onFinished = {
+                                        isRefreshing = false
+                                    }
+                                )
+                            }
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer {
+                                    // Stretch effect based on pull distance
+                                    val scale = 1f + (pullToRefreshState.distanceFraction * 0.1f).coerceAtMost(0.15f)
+                                    scaleY = scale
+                                    transformOrigin = TransformOrigin(0.5f, 0f)
+                                },
+                            contentPadding = PaddingValues(bottom = 16.dp)
+                        ) {
+                            items(coins) { coin ->
+                                CoinListItem(
+                                    coin = coin,
+                                    isSelected = selectedCoin?.id == coin.id,
+                                    onClick = { selectedCoin = coin }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Part 3: Bottom Section - Full Width Buttons
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.Transparent)
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .padding(horizontal = 16.dp)
+                    .padding(vertical = 3.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .background(Color(0xFF1565C0), RoundedCornerShape(16.dp))
+                        .clip(RoundedCornerShape(16.dp)),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "Wallet",
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0D47A1)
-                    )
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .clickable { onWalletDetailClick() }
+                            .padding(start = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = Color.White)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Wallet", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        Text(
+                            text = if (isBalanceVisible) "$$userBalance" else "$ *****",
+                            modifier = Modifier.blur(if (isBalanceVisible) 0.dp else 4.dp),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = Color.White
+                        )
+                    }
 
                     IconButton(
-                        onClick = onSettingsClick,
-                        modifier = Modifier.size(40.dp)
+                        onClick = {
+                            scope.launch {
+                                AuthPreferences.setBalanceVisible(context, !isBalanceVisible)
+                            }
+                        },
+                        modifier = Modifier.padding(end = 8.dp).size(40.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Settings",
-                            tint = Color(0xFF0D47A1)
+                            imageVector = if (isBalanceVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = "Toggle Balance",
+                            tint = Color.White.copy(alpha = 0.8f)
                         )
                     }
                 }
-                
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                // Segmented Control
-                SegmentedControlPremium(
-                    selectedTab = selectedTab,
-                    onTabSelected = { tab ->
-                        selectedTab = tab
-                    }
-                )
-            }
 
-            // Main Content based on selected tab
-            when (selectedTab) {
-//                "wallet" -> {
-//                    SwipeRefresh(
-//                        isRefreshing = isRefreshing,
-//                        onRefresh = { refreshBalances() },
-//                        modifier = Modifier.fillMaxSize()
-//                    ) {
-//                        when (uiState) {
-//                            is WalletUiState.Loading -> LoadingState()
-//                            is WalletUiState.Success -> {
-//                                val successState = uiState as WalletUiState.Success
-//                                WalletContent(
-//                                    balances = successState.balances,
-//                                    transactions = successState.transactions,
-//                                    onWithdrawClick = { selectedTab = "withdraw" },
-//                                    onDepositClick = { selectedTab = "deposit" }
-//                                )
-//                            }
-//                            is WalletUiState.Error -> {
-//                                val errorState = uiState as WalletUiState.Error
-//                                ErrorState(
-//                                    message = errorState.message,
-//                                    onRetry = { refreshBalances() }
-//                                )
-//                            }
-//                            is WalletUiState.Empty -> EmptyState()
-//                        }
-//                    }
-//                }
-                "withdraw" -> {
-                    WithdrawScreenCardDesign(
-                        onBackClick = { selectedTab = "wallet" },
-                        {},
-                    )
-                }
-                "deposit" -> {
-                    DepositScreen(
-                        onBackClick = { selectedTab = "wallet" }
-                    )
+                Button(
+                    onClick = onPaymentClick,
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
+                ) {
+                    Icon(Icons.Default.Payments, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Payment", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
             }
         }
     }
 }
 
-// Function to load data (temporary)
-private suspend fun loadWalletData(onResult: (WalletUiState) -> Unit) {
-    delay(500)
-    onResult(
-        WalletUiState.Success(
-            balances = listOf(
-                TokenBalance("SOL", 3.5),
-                TokenBalance("ARX", 1250.75)
-            ),
-            transactions = listOf(
-                Transaction(
-                    id = "1",
-                    title = "App Transaction",
-                    date = "May 21, 2024",
-                    amount = 5.054684,
-                    isPositive = false,
-                    type = TransactionType.SEND
-                ),
-                Transaction(
-                    id = "2",
-                    title = "Received SOL",
-                    date = "May 20, 2024",
-                    amount = 10.0,
-                    isPositive = true,
-                    type = TransactionType.RECEIVE
-                ),
-                Transaction(
-                    id = "3",
-                    title = "Airdrop",
-                    date = "May 19, 2024",
-                    amount = 1.5,
-                    isPositive = true,
-                    type = TransactionType.AIRDROP
-                )
+private suspend fun refreshCoins(
+    onSuccess: (List<Coin>) -> Unit,
+    onError: (String) -> Unit,
+    onFinished: () -> Unit
+) {
+    try {
+        val response = client.get("https://api.coingecko.com/api/v3/coins/markets") {
+            parameter("vs_currency", "usd")
+            parameter("order", "market_cap_desc")
+            parameter("per_page", 50)
+            parameter("page", 1)
+            parameter("sparkline", "false")
+            parameter("price_change_percentage", "24h")
+            parameter("x_cg_demo_api_key", API_KEY)
+        }
+        val result = response.body<List<Coin>>()
+        if (result.isNotEmpty()) {
+            onSuccess(result)
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        onError("Failed to load market data: ${e.message}")
+    } finally {
+        onFinished()
+    }
+}
+
+private fun formatPrice(price: Double): String {
+    return try {
+        String.format("%,.2f", price)
+    } catch (_: Exception) {
+        price.toString()
+    }
+}
+
+@Composable
+fun CoinChart(
+    data: List<Double>,
+    modifier: Modifier = Modifier,
+    color: Color = Color.White
+) {
+    Canvas(modifier = modifier) {
+        if (data.size < 2) return@Canvas
+
+        val min = data.minOrNull() ?: 0.0
+        val max = data.maxOrNull() ?: 0.0
+        val range = (max - min).coerceAtLeast(0.000001)
+        val width = size.width
+        val height = size.height
+
+        val path = Path()
+        data.forEachIndexed { index, price ->
+            val x = index * (width / (data.size - 1))
+            val y = height - ((price - min) / range * height).toFloat()
+            if (index == 0) {
+                path.moveTo(x, y)
+            } else {
+                path.lineTo(x, y)
+            }
+        }
+
+        drawPath(
+            path = path,
+            color = color,
+            style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
+        )
+
+        val fillPath = Path().apply {
+            addPath(path)
+            lineTo(width, height)
+            lineTo(0f, height)
+            close()
+        }
+        drawPath(
+            path = fillPath,
+            brush = Brush.verticalGradient(
+                colors = listOf(color.copy(alpha = 0.2f), Color.Transparent)
             )
         )
-    )
-}
-
-@Composable
-fun WalletContent(
-    balances: List<TokenBalance>,
-    transactions: List<Transaction>,
-    onWithdrawClick: () -> Unit,
-    onDepositClick: () -> Unit
-) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 16.dp)
-    ) {
-        // Action Buttons (Withdraw/Deposit)
-        item {
-            ActionButtonsRow(
-                onWithdrawClick = onWithdrawClick,
-                onDepositClick = onDepositClick
-            )
-        }
-
-        // Balance Cards
-        items(balances) { balance ->
-            BalanceCard(
-                symbol = balance.symbol,
-                amount = balance.amount,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-        }
-
-        // Transaction History Section
-        item {
-            SectionHeader(
-                title = "Transaction History",
-                modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 8.dp)
-            )
-        }
-
-        if (transactions.isEmpty()) {
-            item {
-                EmptyTransactionsState(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(32.dp)
-                )
-            }
-        } else {
-            items(transactions) { transaction ->
-                TransactionHistoryItem(
-                    transaction = transaction,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                )
-            }
-        }
     }
 }
 
 @Composable
-fun ActionButtonsRow(
-    onWithdrawClick: () -> Unit,
-    onDepositClick: () -> Unit
+fun CoinListItem(
+    coin: Coin,
+    isSelected: Boolean,
+    onClick: () -> Unit
 ) {
-    Row(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly
-    ) {
-        ActionButton(
-            text = "Withdraw",
-            onClick = onWithdrawClick,
-            textColor = Color.Gray,
-            modifier = Modifier.weight(1f)
-        )
-
-        ActionButton(
-            text = "Deposit",
-            onClick = onDepositClick,
-            textColor = Color.Gray,
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-
-@Composable
-fun ActionButton(
-    text: String,
-    onClick: () -> Unit,
-    textColor: Color,
-    modifier: Modifier = Modifier
-) {
-    TextButton(
-        onClick = onClick,
-        modifier = modifier,
-        colors = ButtonDefaults.textButtonColors(
-            contentColor = textColor
-        )
-    ) {
-        Text(
-            text = text,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            fontFamily = FontFamily.SansSerif
-        )
-    }
-}
-
-@Composable
-fun BalanceCard(
-    symbol: String,
-    amount: Double,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(120.dp),
-        shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 8.dp
-        ),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Token Icon
-            Icon(
-                imageVector = Icons.Default.AccountBalanceWallet,
-                contentDescription = "$symbol Icon",
-                modifier = Modifier.size(48.dp),
-                tint = Color(0xFF1976D2)
-            )
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Balance Info
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = "$symbol Balance",
-                    fontSize = 12.sp,
-                    color = Color.Gray,
-                    fontFamily = FontFamily.SansSerif,
-                    fontWeight = FontWeight.Medium
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Row(
-                    verticalAlignment = Alignment.Bottom
-                ) {
-                    Text(
-                        text = String.format("%.6f", amount),
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Monospace,
-                        color = Color.Black
-                    )
-
-                    Text(
-                        text = " $symbol",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black,
-                        modifier = Modifier.padding(start = 4.dp)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun SectionHeader(
-    title: String,
-    modifier: Modifier = Modifier
-) {
-    Text(
-        text = title,
-        fontSize = 16.sp,
-        fontWeight = FontWeight.SemiBold,
-        color = Color.DarkGray,
-        modifier = modifier
-    )
-}
-
-@Composable
-fun TransactionHistoryItem(
-    transaction: Transaction,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(80.dp),
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 4.dp
-        ),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        )
+        color = if (isSelected) Color.White else Color.LightGray.copy(alpha = 0.3f),
+//        shadowElevation = if (isSelected) 4.dp else 1.dp
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
+            modifier = Modifier.padding(12.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Transaction Icon
-            Box(
+            // Icon section
+            AsyncImage(
+                model = coin.image,
+                contentDescription = null,
                 modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFFF5F5F5)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = when (transaction.type) {
-                        TransactionType.SEND -> Icons.Default.ArrowUpward
-                        TransactionType.RECEIVE -> Icons.Default.ArrowDownward
-                        TransactionType.SWAP -> Icons.Default.SwapHoriz
-                        TransactionType.AIRDROP -> Icons.Default.Flight
-                    },
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = Color(0xFF666666)
-                )
-            }
+                    .size(40.dp)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Fit,
+                onError = {
+                    println("Error loading image: ${it.result.throwable}")
+                    // This will show you the actual error
+                }
+            )
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Transaction Info
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = transaction.title,
-                    fontSize = 15.sp,
+                    text = coin.name,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF333333),
-                    fontFamily = FontFamily.SansSerif
+                    fontSize = 16.sp,
+                    color = Color(0xFF1A237E)
                 )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
                 Text(
-                    text = transaction.date,
+                    text = coin.symbol.uppercase(),
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+            }
+
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = "$${formatPrice(coin.current_price)}",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 16.sp,
+                    color = Color(0xFF1A237E)
+                )
+                val priceChange = coin.price_change_percentage_24h ?: 0.0
+                Text(
+                    text = "${if (priceChange >= 0) "+" else ""}${String.format("%.2f", priceChange)}%",
                     fontSize = 13.sp,
-                    color = Color.Gray,
-                    fontFamily = FontFamily.SansSerif
-                )
-            }
-
-            // Amount
-            Text(
-                text = "${if (transaction.isPositive) "+" else "-"} ${String.format("%.6f", transaction.amount)}",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (transaction.isPositive) Color(0xFF4CAF50) else Color(0xFFF44336),
-                fontFamily = FontFamily.Monospace,
-                textAlign = TextAlign.End
-            )
-        }
-    }
-}
-
-@Composable
-fun LoadingState() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            CircularProgressIndicator(
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(48.dp)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Loading wallet...",
-                color = Color.Gray,
-                fontSize = 14.sp
-            )
-        }
-    }
-}
-
-@Composable
-fun EmptyTransactionsState(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            imageVector = Icons.Default.History,
-            contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = Color.LightGray
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "No transactions yet",
-            fontSize = 16.sp,
-            color = Color.Gray,
-            fontWeight = FontWeight.Medium
-        )
-        Text(
-            text = "Your transaction history will appear here",
-            fontSize = 14.sp,
-            color = Color.LightGray
-        )
-    }
-}
-
-@Composable
-fun EmptyState() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "No data available",
-            fontSize = 16.sp,
-            color = Color.Gray
-        )
-    }
-}
-
-@Composable
-fun ErrorState(
-    message: String,
-    onRetry: () -> Unit
-) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                imageVector = Icons.Default.Error,
-                contentDescription = null,
-                modifier = Modifier.size(64.dp),
-                tint = MaterialTheme.colorScheme.error
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = message,
-                fontSize = 14.sp,
-                color = Color.Gray,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = onRetry,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Text("Retry")
-            }
-        }
-    }
-}
-
-// SwipeRefresh wrapper
-@Composable
-fun SwipeRefresh(
-    isRefreshing: Boolean,
-    onRefresh: () -> Unit,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
-) {
-    Box(modifier = modifier) {
-        content()
-
-        if (isRefreshing) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                contentAlignment = Alignment.TopCenter
-            ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(32.dp),
-                    color = MaterialTheme.colorScheme.primary
+                    fontWeight = FontWeight.Bold,
+                    color = if (priceChange >= 0) Color(0xFF2E7D32) else Color(0xFFD32F2F)
                 )
             }
         }
     }
 }
+
 @Composable
-fun SegmentedControlPremium(
-    selectedTab: String,
-    onTabSelected: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val tabs = listOf("withdraw" to "Withdraw", "deposit" to "Deposit")
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(60.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(
-                Brush.horizontalGradient(
-                    colors = listOf(
-                        Color(0xFFFFFFFF).copy(alpha = 0.2f),
-                        Color(0xFFFFFFFF).copy(alpha = 0.1f)
-                    )
-                )
-            )
-            .background(Color.White.copy(alpha = 0.3f))
-            .border(
-                width = 1.dp,
-                color = Color.White.copy(alpha = 0.5f),
-                shape = RoundedCornerShape(20.dp)
-            )
-            .padding(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        tabs.forEach { (key, label) ->
-            val isSelected = selectedTab == key
-
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(52.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(
-                        if (isSelected)
-                            Brush.linearGradient(
-                                colors = listOf(
-                                    Color(0xFF1976D2),
-                                    Color(0xFF42A5F5)
-                                )
-                            )
-                        else
-                            Brush.verticalGradient(
-                                colors = listOf(Color.Transparent, Color.Transparent)
-                            )
-                    )
-                    .clickable { onTabSelected(key) },
-                contentAlignment = Alignment.Center
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = if (key == "withdraw")
-                            Icons.Default.ArrowUpward
-                        else
-                            Icons.Default.ArrowDownward,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                        tint = if (isSelected) Color.White else Color(0xFF546E7A)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = label,
-                        fontSize = 14.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isSelected) Color.White else Color(0xFF546E7A)
-                    )
-                }
-            }
-        }
-    }
-}
-@Composable
-fun SegmentedControlPill(
-    selectedTab: String,
-    onTabSelected: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val tabs = listOf("withdraw" to "Withdraw", "deposit" to "Deposit")
-
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFF5F7FA)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            tabs.forEach { (key, label) ->
-                val isSelected = selectedTab == key
-
-                Button(
-                    onClick = { onTabSelected(key) },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp),
-                    shape = RoundedCornerShape(28.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isSelected)
-                            Color(0xFF1976D2)
-                        else
-                            Color.Transparent,
-                        contentColor = if (isSelected)
-                            Color.White
-                        else
-                            Color(0xFF546E7A)
-                    ),
-                    elevation = ButtonDefaults.buttonElevation(
-                        defaultElevation = if (isSelected) 2.dp else 0.dp,
-                        pressedElevation = 2.dp
-                    )
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = if (key == "withdraw")
-                                Icons.Default.ArrowUpward
-                            else
-                                Icons.Default.ArrowDownward,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = if (isSelected) Color.White else Color(0xFF1976D2)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = label,
-                            fontSize = 14.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-// Withdraw Screen Content
-@Composable
-fun WithdrawScreenContent(
-    onBackClick: () -> Unit
-) {
-    Column(
+fun CoinImage(imageUrl: String) {
+    AsyncImage(
+        model = ImageRequest.Builder(LocalContext.current)
+            .data(imageUrl)
+            .crossfade(true)
+            .build(),
+        contentDescription = "Coin image",
         modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            imageVector = Icons.Default.ArrowUpward,
-            contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = Color(0xFF1976D2)
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Text(
-            text = "Withdraw",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF0D47A1)
-        )
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        Text(
-            text = "Withdraw functionality will be implemented here",
-            fontSize = 14.sp,
-            color = Color.Gray,
-            textAlign = TextAlign.Center
-        )
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        Button(
-            onClick = onBackClick,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF1976D2)
-            )
-        ) {
-            Text("Back to Wallet")
-        }
-    }
+            .size(40.dp)
+            .clip(CircleShape),
+        colorFilter = null // Remove any tint
+    )
 }
 
-// Deposit Screen Content
-@Composable
-fun DepositScreenContent(
-    onBackClick: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            imageVector = Icons.Default.ArrowDownward,
-            contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = Color(0xFF4CAF50)
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Text(
-            text = "Deposit",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF0D47A1)
-        )
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        Text(
-            text = "Deposit functionality will be implemented here",
-            fontSize = 14.sp,
-            color = Color.Gray,
-            textAlign = TextAlign.Center
-        )
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        Button(
-            onClick = onBackClick,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF1976D2)
-            )
-        ) {
-            Text("Back to Wallet")
-        }
-    }
-}
-
-// Preview
 @Preview(showBackground = true)
 @Composable
-fun PreviewWalletScreen() {
+fun PreviewTabBarView() {
     MaterialTheme {
-        WalletScreen()
+        WalletScreen({}, {})
     }
 }

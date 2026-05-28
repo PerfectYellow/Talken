@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
@@ -38,6 +39,7 @@ kotlin {
             implementation("androidx.biometric:biometric:1.4.0-alpha02")
 
             implementation("io.coil-kt.coil3:coil-compose:3.4.0")
+            implementation("io.coil-kt.coil3:coil-network-ktor3:3.4.0")
 
             implementation(libs.ktor.client.android)
 

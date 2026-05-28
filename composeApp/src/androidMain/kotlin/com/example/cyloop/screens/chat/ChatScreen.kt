@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,7 +20,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -35,8 +35,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -48,7 +51,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import java.util.Date
 import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
-import com.example.cyloop.R
 import cyloop.composeapp.generated.resources.Res
 import cyloop.composeapp.generated.resources.person3
 import org.jetbrains.compose.resources.painterResource
@@ -142,7 +144,7 @@ fun ChatScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White.copy(alpha = 0.95f))
+                    .background(Color.Transparent)
                     .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
                 Text(
@@ -184,7 +186,16 @@ fun ChatScreen(
                 modifier = Modifier.fillMaxSize()
             ) {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            // Apply a stretch effect based on pull-to-refresh distance
+                            val scale = 1f + (pullToRefreshState.distanceFraction * 0.1f).coerceAtMost(0.15f)
+                            scaleY = scale
+                            transformOrigin = TransformOrigin(0.5f, 0f)
+                        },
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(chats) { chat ->
                         ChatCell(
@@ -224,11 +235,17 @@ fun ChatCell(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
-            .background(
-                Color.White.copy(alpha = 0.9f),
-                shape = RoundedCornerShape(0.dp)
+            .shadow(
+                elevation = 6.dp,
+                shape = RoundedCornerShape(16.dp),
+                spotColor = Color.Black.copy(alpha = 0.15f)
             )
+            .background(
+                Color.White.copy(alpha = 0.95f),
+                shape = RoundedCornerShape(16.dp)
+            )
+            .clip(RoundedCornerShape(16.dp))
+            .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -258,16 +275,16 @@ fun ChatCell(
             }
 
             // Online indicator
-            if (chat.isOnline) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .size(14.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF4CAF50))
-                        .padding(2.dp)
-                )
-            }
+//            if (chat.isOnline) {
+//                Box(
+//                    modifier = Modifier
+//                        .align(Alignment.BottomEnd)
+//                        .size(14.dp)
+//                        .clip(CircleShape)
+//                        .background(Color(0xFF4CAF50))
+//                        .padding(2.dp)
+//                )
+//            }
         }
 
         Spacer(modifier = Modifier.width(12.dp))
@@ -315,35 +332,26 @@ fun ChatCell(
                     modifier = Modifier.weight(1f)
                 )
 
-                if (chat.unreadCount > 0) {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .size(20.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF2196F3)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = if (chat.unreadCount > 9) "9+" else chat.unreadCount.toString(),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    }
-                }
+//                if (chat.unreadCount > 0) {
+//                    Spacer(modifier = Modifier.width(8.dp))
+//                    Box(
+//                        modifier = Modifier
+//                            .size(20.dp)
+//                            .clip(CircleShape)
+//                            .background(Color(0xFF2196F3)),
+//                        contentAlignment = Alignment.Center
+//                    ) {
+//                        Text(
+//                            text = if (chat.unreadCount > 9) "9+" else chat.unreadCount.toString(),
+//                            fontSize = 11.sp,
+//                            fontWeight = FontWeight.Bold,
+//                            color = Color.White
+//                        )
+//                    }
+//                }
             }
         }
     }
-
-    // Divider
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 80.dp)
-            .height(0.5.dp)
-            .background(Color(0xFFE0E0E0))
-    )
 }
 
 private fun formatTime(date: Date): String {

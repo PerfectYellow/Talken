@@ -11,6 +11,7 @@ val Context.dataStore by preferencesDataStore(name = "auth_prefs")
 
 object AuthPreferences {
     private val BIOMETRIC_ENABLED = booleanPreferencesKey("biometric_enabled")
+    private val BALANCE_VISIBLE = booleanPreferencesKey("balance_visible")
 
     fun isBiometricEnabled(context: Context): Flow<Boolean> {
         return context.dataStore.data.map { preferences ->
@@ -21,6 +22,18 @@ object AuthPreferences {
     suspend fun setBiometricEnabled(context: Context, enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[BIOMETRIC_ENABLED] = enabled
+        }
+    }
+
+    fun isBalanceVisible(context: Context): Flow<Boolean> {
+        return context.dataStore.data.map { preferences ->
+            preferences[BALANCE_VISIBLE] ?: true
+        }
+    }
+
+    suspend fun setBalanceVisible(context: Context, visible: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[BALANCE_VISIBLE] = visible
         }
     }
 

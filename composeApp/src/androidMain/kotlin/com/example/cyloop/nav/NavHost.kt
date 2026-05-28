@@ -7,6 +7,10 @@ import com.example.cyloop.screens.main.TabBarView
 import com.example.cyloop.screens.profile.PasscodeLockScreen
 import com.example.cyloop.screens.chat.ChatDetailScreen
 import com.example.cyloop.screens.chat.NewChatScreen
+import com.example.cyloop.screens.chat.UserInfoScreen
+import com.example.cyloop.screens.wallet.WalletInfoView
+import com.example.cyloop.screens.wallet.PaymentInfoView
+import com.example.cyloop.screens.wallet.NewTransactionView
 
 @Composable
 fun NavHost(
@@ -48,6 +52,12 @@ fun NavHost(
                 },
                 onNavigateToNewChat = {
                     navController.navigate(Route.NewChat)
+                },
+                onNavigateToWalletDetail = {
+                    navController.navigate(Route.WalletDetail)
+                },
+                onNavigateToPayment = {
+                    navController.navigate(Route.Payment)
                 }
             )
         }
@@ -63,6 +73,18 @@ fun NavHost(
         is Route.ChatDetail -> {
             ChatDetailScreen(
                 chatId = route.chatId,
+                chatName = route.chatName,
+                onBackClick = {
+                    navController.goBack()
+                },
+                onUserInfoClick = {
+                    navController.navigate(Route.UserInfo(route.chatName))
+                }
+            )
+        }
+
+        is Route.UserInfo -> {
+            UserInfoScreen(
                 chatName = route.chatName,
                 onBackClick = {
                     navController.goBack()
@@ -84,6 +106,33 @@ fun NavHost(
 
         is Route.Detail -> {
             // DetailScreen(id = route.id, onBack = { navController.goBack() })
+        }
+
+        is Route.WalletDetail -> {
+            WalletInfoView(
+                onBackClick = {
+                    navController.goBack()
+                }
+            )
+        }
+
+        is Route.Payment -> {
+            PaymentInfoView(
+                onBackClick = {
+                    navController.goBack()
+                },
+                onNewTransactionClick = {
+                    navController.navigate(Route.NewTransactionRoute)
+                }
+            )
+        }
+
+        is Route.NewTransactionRoute -> {
+            NewTransactionView(
+                onBackClick = {
+                    navController.goBack()
+                }
+            )
         }
     }
 }

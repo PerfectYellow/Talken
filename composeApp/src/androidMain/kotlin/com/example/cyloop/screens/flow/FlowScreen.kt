@@ -93,11 +93,8 @@ fun FlowScreen(
     // Charming, peaceful, quiet gradient blue background for the whole screen
     val backgroundGradient = Brush.verticalGradient(
         colors = listOf(
-            Color(0xFFE8F5E9),  // Top
-            Color(0xFFE3F2FD)   // Bottom
-//            Color(0xFFE8F0FE), // Very soft blue-white
-//            Color(0xFFD6E6F5), // Gentle powder blue
-//            Color(0xFFC5D9F0)  // Light serene blue
+            Color(0xFFE8F5E9),
+            Color(0xFFE3F2FD)
         ),
         startY = 0f,
         endY = Float.POSITIVE_INFINITY

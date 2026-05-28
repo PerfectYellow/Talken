@@ -57,7 +57,8 @@ androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics", ve
 androidx-runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "runtime" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 androidx-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtx" }
-androidx-glance-preview = { group = "androidx.glance", name = "glance-preview", version.ref = "glancePreview" }
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version = "3.4.0" }
+coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor", version = "3.4.0" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
@@ -65,3 +66,4 @@ androidLibrary = { id = "com.android.library", version.ref = "agp" }
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

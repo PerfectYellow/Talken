@@ -1,6 +1,7 @@
 package com.example.cyloop.screens.chat
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -8,8 +9,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -33,7 +34,8 @@ data class Message(
 fun ChatDetailScreen(
     chatId: String,
     chatName: String,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onUserInfoClick: () -> Unit
 ) {
     var messageText by remember { mutableStateOf("") }
     val messages = remember {
@@ -49,7 +51,13 @@ fun ChatDetailScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onUserInfoClick() }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Box(
                             modifier = Modifier
                                 .size(40.dp)
@@ -72,7 +80,7 @@ fun ChatDetailScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
@@ -167,6 +175,6 @@ fun MessageBubble(message: Message) {
 @Composable
 fun PreviewChatDetailScreen() {
     MaterialTheme {
-        ChatDetailScreen("", "", {})
+        ChatDetailScreen("", "", {}, {})
     }
 }

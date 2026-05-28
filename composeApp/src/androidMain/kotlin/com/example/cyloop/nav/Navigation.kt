@@ -18,16 +18,22 @@ sealed class Route {
     data class ChatDetail(val chatId: String, val chatName: String) : Route()
 
     @Serializable
+    data class UserInfo(val chatName: String) : Route()
+
+    @Serializable
     data object NewChat : Route()
 
     @Serializable
-    data class Detail(val id: String) : Route()
+    data object Detail : Route()
 
-//    @Serializable
-//    data object Withdraw : Route()
-//
-//    @Serializable
-//    data object Deposit : Route()
+    @Serializable
+    data object WalletDetail : Route()
+
+    @Serializable
+    data object Payment : Route()
+
+    @Serializable
+    data object NewTransactionRoute : Route()
 }
 
 fun Route.toNavString(): String = when (this) {
@@ -35,8 +41,10 @@ fun Route.toNavString(): String = when (this) {
     is Route.TabView -> "tab_view/${tab}"
     is Route.PasscodeLock -> "passcode_lock"
     is Route.ChatDetail -> "chat_detail/${chatId}/${chatName}"
+    is Route.UserInfo -> "user_info/${chatName}"
     is Route.NewChat -> "new_chat"
-    is Route.Detail -> "detail/${id}"
-//    is Route.Withdraw -> "withdraw"
-//    is Route.Deposit -> "deposit"
+    is Route.Detail -> "detail"
+    is Route.WalletDetail -> "wallet_detail"
+    is Route.Payment -> "payment"
+    is Route.NewTransactionRoute -> "new_transaction"
 }

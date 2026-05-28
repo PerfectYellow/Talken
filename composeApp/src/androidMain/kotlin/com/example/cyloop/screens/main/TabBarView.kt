@@ -74,7 +74,9 @@ fun TabBarView(
     onSignOut: () -> Unit,
     onNavigateToPasscodeLock: () -> Unit,
     onNavigateToChatDetail: (String, String) -> Unit,
-    onNavigateToNewChat: () -> Unit
+    onNavigateToNewChat: () -> Unit,
+    onNavigateToWalletDetail: () -> Unit = {},
+    onNavigateToPayment: () -> Unit = {}
 ) {
     var selectedScreen by remember(initialTab) { 
         mutableStateOf(BottomNavScreen.fromRoute(initialTab)) 
@@ -96,9 +98,6 @@ fun TabBarView(
             modifier = Modifier
                 .background(
                     Color(0xFFE3F2FD)
-//                    Brush.verticalGradient(
-//                        colors = listOf(Color(0xFFE3F2FD), Color(0xFFBBDEFB))
-//                    )
                 )
                 .fillMaxSize()
                 .padding(paddingValues)
@@ -117,7 +116,10 @@ fun TabBarView(
                     onExportWalletClick = {},
                     onPasscodeLockClick = onNavigateToPasscodeLock
                 )
-                BottomNavScreen.Wallet -> WalletScreen()
+                BottomNavScreen.Wallet -> WalletScreen(
+                    onWalletDetailClick = onNavigateToWalletDetail,
+                    onPaymentClick = onNavigateToPayment
+                )
                 BottomNavScreen.Flow -> FlowScreen()
                 BottomNavScreen.Chats -> ChatScreen(
                     onChatClick = onNavigateToChatDetail,
@@ -143,7 +145,8 @@ fun FloatingBottomNavigationBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 14.dp),
+            .padding(horizontal = 8.dp, vertical = 14.dp)
+            .padding(bottom = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         Row(
@@ -198,7 +201,7 @@ fun FloatingNavItem(
             .clip(RoundedCornerShape(20.dp))
             .background(backgroundColor)
             .clickable(onClick = onClick)
-            .padding(horizontal = 26.dp, vertical = 8.dp)
+            .padding(horizontal = 24.dp, vertical = 2.dp)
     ) {
         Icon(
             imageVector = if (isSelected) screen.selectedIcon else screen.icon,
