@@ -1,8 +1,6 @@
 package com.example.cyloop.screens.profile
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,18 +10,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -36,17 +28,15 @@ fun ProfileHeaderWithQRElegant(
     onQrCodeClick: () -> Unit,
     onCopyAddressClick: () -> Unit
 ) {
-    val clipboardManager = LocalClipboardManager.current
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1976D2)
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.95f)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
             modifier = Modifier
@@ -63,10 +53,10 @@ fun ProfileHeaderWithQRElegant(
                         .size(70.dp)
                         .clip(CircleShape)
                         .background(
-                            Brush.radialGradient(
+                            Brush.linearGradient(
                                 colors = listOf(
-                                    Color.White,
-                                    Color(0xFFE3F2FD)
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.secondary
                                 )
                             )
                         ),
@@ -76,7 +66,7 @@ fun ProfileHeaderWithQRElegant(
                         imageVector = Icons.Default.Person,
                         contentDescription = "Profile",
                         modifier = Modifier.size(40.dp),
-                        tint = Color(0xFF1976D2)
+                        tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
 
@@ -87,12 +77,12 @@ fun ProfileHeaderWithQRElegant(
                         text = userName,
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                     Text(
                         text = "Balance: $userBalance",
                         fontSize = 14.sp,
-                        color = Color.White.copy(alpha = 0.8f)
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                     )
                 }
 
@@ -101,14 +91,14 @@ fun ProfileHeaderWithQRElegant(
                     onClick = onQrCodeClick,
                     modifier = Modifier
                         .size(48.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.White.copy(alpha = 0.2f))
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
                 ) {
                     Icon(
                         imageVector = Icons.Default.QrCodeScanner,
                         contentDescription = "QR Code",
-                        modifier = Modifier.size(28.dp),
-                        tint = Color.White
+                        modifier = Modifier.size(26.dp),
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -116,10 +106,10 @@ fun ProfileHeaderWithQRElegant(
     }
 }
 
-@Preview(showBackground = true)
+@PreviewLightDark
 @Composable
 fun PreviewProfileHeaderWithQRModern() {
     MaterialTheme {
-        ProfileHeaderWithQRElegant("", "", "", {}, {}, {})
+        ProfileHeaderWithQRElegant("kaay", "0.0 Sol", "9xQq...3fGt", null, {}, {})
     }
 }

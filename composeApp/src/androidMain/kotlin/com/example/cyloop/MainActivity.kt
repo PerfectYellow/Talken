@@ -7,7 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.OnBackPressedCallback
 import android.widget.Toast
 import androidx.annotation.CallSuper
-import androidx.compose.material3.MaterialTheme
+import com.example.cyloop.theme.CyLoopTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.tooling.preview.Preview
@@ -31,7 +31,7 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            MaterialTheme {
+            CyLoopTheme {
                 // Create the navigation controller
                 val navController = rememberNavController()
                 navControllerRef = navController

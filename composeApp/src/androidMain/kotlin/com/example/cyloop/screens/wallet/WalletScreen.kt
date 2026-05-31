@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.example.cyloop.storage.AuthPreferences
+import com.example.cyloop.theme.getAppBackgroundBrush
 import com.example.cyloop.screens.main.TabBarView
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -111,12 +112,7 @@ fun WalletScreen(
     val isBalanceVisible by AuthPreferences.isBalanceVisible(context).collectAsState(initial = true)
     val userBalance = "1,234.56"
 
-    val backgroundGradient = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFFE8F5E9),
-            Color(0xFFE3F2FD)
-        )
-    )
+    val backgroundGradient = getAppBackgroundBrush()
 
     LaunchedEffect(Unit) {
         if (isLoading) {
@@ -180,7 +176,7 @@ fun WalletScreen(
                         .fillMaxSize()
                         .background(
                             Brush.verticalGradient(
-                                listOf(Color(0xFF0D47A1), Color(0xFF1976D2))
+                                listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)
                             )
                         )
                         .padding(20.dp)
@@ -226,13 +222,13 @@ fun WalletScreen(
                                 Icon(
                                     imageVector = if (priceChange >= 0) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
                                     contentDescription = null,
-                                    tint = if (priceChange >= 0) Color(0xFF81C784) else Color(0xFFF28B82),
+                                    tint = if (priceChange >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
                                     text = "${String.format("%.2f", Math.abs(priceChange))}% (24h)",
-                                    color = if (priceChange >= 0) Color(0xFF81C784) else Color(0xFFF28B82),
+                                    color = if (priceChange >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -276,7 +272,7 @@ fun WalletScreen(
             Box(modifier = Modifier.weight(1f)) {
                 if (isLoading) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = Color(0xFF1976D2))
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
                 } else if (errorMessage != null && coins.isEmpty()) {
                     Column(
@@ -341,21 +337,20 @@ fun WalletScreen(
         }
 
         // Part 3: Bottom Section - Full Width Buttons (Floating Overlay)
-        Column(
+        Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
                 .padding(bottom = bottomPadding + 16.dp),
-            verticalArrangement = Arrangement.spacedBy(5.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .weight(1.3f)
                     .height(40.dp)
-                    .shadow(8.dp, RoundedCornerShape(16.dp))
-                    .background(Color(0xFF1565C0), RoundedCornerShape(16.dp))
-                    .clip(RoundedCornerShape(16.dp)),
+                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(12.dp)),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
@@ -363,20 +358,30 @@ fun WalletScreen(
                         .weight(1f)
                         .fillMaxHeight()
                         .clickable { onWalletDetailClick() }
-                        .padding(start = 16.dp),
+                        .padding(start = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = Color.White)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Wallet", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+                    Icon(
+                        Icons.Default.AccountBalanceWallet,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        "Wallet",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = Color.White
+                    )
 
                     Spacer(modifier = Modifier.weight(1f))
 
                     Text(
-                        text = if (isBalanceVisible) "$$userBalance" else "$ *****",
+                        text = if (isBalanceVisible) "$$userBalance" else "$ ***",
                         modifier = Modifier.blur(if (isBalanceVisible) 0.dp else 4.dp),
                         fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
+                        fontSize = 13.sp,
                         color = Color.White
                     )
                 }
@@ -387,12 +392,15 @@ fun WalletScreen(
                             AuthPreferences.setBalanceVisible(context, !isBalanceVisible)
                         }
                     },
-                    modifier = Modifier.padding(end = 8.dp).size(40.dp)
+                    modifier = Modifier
+                        .padding(end = 4.dp)
+                        .size(32.dp)
                 ) {
                     Icon(
                         imageVector = if (isBalanceVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                         contentDescription = "Toggle Balance",
-                        tint = Color.White.copy(alpha = 0.8f)
+                        tint = Color.White.copy(alpha = 0.8f),
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }
@@ -400,15 +408,15 @@ fun WalletScreen(
             Button(
                 onClick = onPaymentClick,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(40.dp)
-                    .shadow(8.dp, RoundedCornerShape(16.dp)),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
+                    .weight(1f)
+                    .height(40.dp),
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(horizontal = 8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
             ) {
-                Icon(Icons.Default.Payments, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Payment", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Icon(Icons.Default.Payments, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Payment", fontWeight = FontWeight.Bold, fontSize = 13.sp)
             }
         }
     }
@@ -633,10 +641,20 @@ fun CoinListItem(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp)
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            .then(
+                if (isSelected) Modifier.border(
+                    width = 1.5.dp,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(16.dp)
+                ) else Modifier
+            ),
         shape = RoundedCornerShape(16.dp),
-        color = if (isSelected) Color.White else Color.LightGray.copy(alpha = 0.3f),
-//        shadowElevation = if (isSelected) 4.dp else 1.dp
+        color = if (isSelected) {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+        } else {
+            MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+        },
     ) {
         Row(
             modifier = Modifier.padding(12.dp).fillMaxWidth(),
@@ -663,7 +681,7 @@ fun CoinListItem(
                     text = coin.name,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    color = Color(0xFF1A237E)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = coin.symbol.uppercase(),
@@ -677,14 +695,14 @@ fun CoinListItem(
                     text = "$${formatPrice(coin.current_price)}",
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = 16.sp,
-                    color = Color(0xFF1A237E)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 val priceChange = coin.price_change_percentage_24h ?: 0.0
                 Text(
                     text = "${if (priceChange >= 0) "+" else ""}${String.format("%.2f", priceChange)}%",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (priceChange >= 0) Color(0xFF2E7D32) else Color(0xFFD32F2F)
+                    color = if (priceChange >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                 )
             }
         }

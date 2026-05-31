@@ -35,6 +35,8 @@ import com.example.cyloop.storage.AuthPreferences
 import kotlinx.coroutines.launch
 import androidx.compose.ui.text.input.ImeAction
 
+import com.example.cyloop.theme.getAppBackgroundBrush
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PasscodeLockScreen(
@@ -65,7 +67,7 @@ fun PasscodeLockScreen(
                         text = "Passcode Lock",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0D47A1)
+                        color = MaterialTheme.colorScheme.primary
                     )
                 },
                 navigationIcon = {
@@ -73,28 +75,21 @@ fun PasscodeLockScreen(
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color(0xFF0D47A1)
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surface
                 )
             )
         },
-        containerColor = Color(0xFFF5F7FA)
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFFE3F2FD),
-                            Color(0xFFBBDEFB)
-                        )
-                    )
-                )
+                .background(getAppBackgroundBrush())
         ) {
             Column(
                 modifier = Modifier
@@ -108,7 +103,7 @@ fun PasscodeLockScreen(
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    color = Color.White.copy(alpha = 0.9f),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
                     shadowElevation = 4.dp
                 ) {
                     Column(
@@ -125,8 +120,8 @@ fun PasscodeLockScreen(
                                     .background(
                                         Brush.linearGradient(
                                             colors = listOf(
-                                                Color(0xFF1976D2),
-                                                Color(0xFF42A5F5)
+                                                MaterialTheme.colorScheme.primary,
+                                                MaterialTheme.colorScheme.secondary
                                             )
                                         )
                                     ),
@@ -135,7 +130,7 @@ fun PasscodeLockScreen(
                                 Icon(
                                     imageVector = Icons.Default.Lock,
                                     contentDescription = null,
-                                    tint = Color.White,
+                                    tint = MaterialTheme.colorScheme.onPrimary,
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
@@ -144,7 +139,7 @@ fun PasscodeLockScreen(
                                 text = "Authentication Method",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF1A237E)
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
 
@@ -153,7 +148,7 @@ fun PasscodeLockScreen(
                         Text(
                             text = "Choose how you want to secure your account",
                             fontSize = 14.sp,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -165,7 +160,7 @@ fun PasscodeLockScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = Color.White
+                        containerColor = MaterialTheme.colorScheme.surface
                     ),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
@@ -207,15 +202,15 @@ fun PasscodeLockScreen(
                                             if (isSelected)
                                                 Brush.linearGradient(
                                                     colors = listOf(
-                                                        Color(0xFF1976D2),
-                                                        Color(0xFF42A5F5)
+                                                        MaterialTheme.colorScheme.primary,
+                                                        MaterialTheme.colorScheme.secondary
                                                     )
                                                 )
                                             else
                                                 Brush.linearGradient(
                                                     colors = listOf(
-                                                        Color(0xFFF5F5F5),
-                                                        Color(0xFFF5F5F5)
+                                                        MaterialTheme.colorScheme.surfaceVariant,
+                                                        MaterialTheme.colorScheme.surfaceVariant
                                                     )
                                                 )
                                         ),
@@ -228,7 +223,7 @@ fun PasscodeLockScreen(
                                             Icons.Default.Lock,
                                         contentDescription = null,
                                         modifier = Modifier.size(20.dp),
-                                        tint = if (isSelected) Color.White else Color(0xFF1976D2)
+                                        tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary
                                     )
                                 }
 
@@ -241,19 +236,19 @@ fun PasscodeLockScreen(
                                         text = text,
                                         fontSize = 16.sp,
                                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                                        color = if (isSelected) Color(0xFF1976D2) else Color(0xFF2C3E50)
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                                     )
                                     if (isBiometric) {
                                         Text(
                                             text = "Use fingerprint or face recognition",
                                             fontSize = 12.sp,
-                                            color = Color.Gray
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     } else {
                                         Text(
                                             text = "Use a secure password",
                                             fontSize = 12.sp,
-                                            color = Color.Gray
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 }
@@ -262,7 +257,7 @@ fun PasscodeLockScreen(
                                     selected = isSelected,
                                     onClick = null,
                                     colors = RadioButtonDefaults.colors(
-                                        selectedColor = Color(0xFF1976D2)
+                                        selectedColor = MaterialTheme.colorScheme.primary
                                     )
                                 )
                             }
@@ -271,7 +266,7 @@ fun PasscodeLockScreen(
                                 HorizontalDivider(
                                     modifier = Modifier.padding(start = 76.dp),
                                     thickness = 1.dp,
-                                    color = Color(0xFFF0F0F0)
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
                                 )
                             }
                         }
@@ -286,7 +281,7 @@ fun PasscodeLockScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = Color.White
+                            containerColor = MaterialTheme.colorScheme.surface
                         ),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
@@ -297,7 +292,7 @@ fun PasscodeLockScreen(
                                 text = "Reset Password",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF1A237E)
+                                color = MaterialTheme.colorScheme.onSurface
                             )
 
                             Spacer(modifier = Modifier.height(16.dp))
@@ -341,11 +336,11 @@ fun PasscodeLockScreen(
                                     }
                                 },
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = Color(0xFF1976D2),
-                                    unfocusedBorderColor = Color(0xFF90CAF9),
-                                    focusedLabelColor = Color(0xFF1976D2),
-                                    errorBorderColor = Color(0xFFD32F2F),
-                                    errorLabelColor = Color(0xFFD32F2F)
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                    focusedLabelColor = MaterialTheme.colorScheme.primary,
+                                    errorBorderColor = MaterialTheme.colorScheme.error,
+                                    errorLabelColor = MaterialTheme.colorScheme.error
                                 )
                             )
 
@@ -375,7 +370,7 @@ fun PasscodeLockScreen(
                                         }
                                     },
                                     colors = ButtonDefaults.textButtonColors(
-                                        contentColor = Color(0xFF1976D2)
+                                        contentColor = MaterialTheme.colorScheme.primary
                                     )
                                 ) {
                                     Icon(
@@ -386,25 +381,6 @@ fun PasscodeLockScreen(
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text("Reset Password")
                                 }
-
-//                                Button(
-//                                    onClick = {
-//                                        if (password.isNotBlank()) {
-//                                            scope.launch {
-//                                                // Save password logic here
-//                                                AuthPreferences.setPassword(context, password)
-//                                            }
-//                                        }
-//                                    },
-//                                    enabled = password.isNotBlank(),
-//                                    shape = RoundedCornerShape(12.dp),
-//                                    colors = ButtonDefaults.buttonColors(
-//                                        containerColor = Color(0xFF1976D2),
-//                                        disabledContainerColor = Color(0xFFBBDEFB)
-//                                    )
-//                                ) {
-//                                    Text("Save Password")
-//                                }
                             }
                         }
                     }
@@ -414,7 +390,7 @@ fun PasscodeLockScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = Color(0xFFE8F5E9)
+                            containerColor = Color(0xFFE8F5E9)//MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
                         ),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
@@ -429,13 +405,13 @@ fun PasscodeLockScreen(
                                 modifier = Modifier
                                     .size(48.dp)
                                     .clip(CircleShape)
-                                    .background(Color(0xFF4CAF50).copy(alpha = 0.2f)),
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Fingerprint,
                                     contentDescription = null,
-                                    tint = Color(0xFF4CAF50),
+                                    tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(28.dp)
                                 )
                             }
@@ -447,12 +423,12 @@ fun PasscodeLockScreen(
                                     text = "Biometric Active",
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Color(0xFF2E7D32)
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
                                     text = "Biometric authentication is currently active for logging in.",
                                     fontSize = 13.sp,
-                                    color = Color(0xFF558B2F)
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -471,7 +447,7 @@ fun PasscodeLockScreen(
                     text = "Reset Password",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0D47A1)
+                    color = MaterialTheme.colorScheme.primary
                 )
             },
             text = {
@@ -479,7 +455,7 @@ fun PasscodeLockScreen(
                     Text(
                         text = "Enter your new password",
                         fontSize = 14.sp,
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
 
@@ -491,7 +467,7 @@ fun PasscodeLockScreen(
                         shape = RoundedCornerShape(12.dp),
                         visualTransformation = PasswordVisualTransformation(),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF1976D2)
+                            focusedBorderColor = MaterialTheme.colorScheme.primary
                         )
                     )
 
@@ -515,7 +491,7 @@ fun PasscodeLockScreen(
                             }
                         },
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF1976D2)
+                            focusedBorderColor = MaterialTheme.colorScheme.primary
                         )
                     )
                 }
@@ -536,7 +512,7 @@ fun PasscodeLockScreen(
                     enabled = resetPassword.isNotBlank() && resetPassword == confirmResetPassword,
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF1976D2)
+                        containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
                     Text("Reset")
@@ -546,13 +522,16 @@ fun PasscodeLockScreen(
                 TextButton(
                     onClick = { showResetDialog = false },
                     colors = ButtonDefaults.textButtonColors(
-                        contentColor = Color.Gray
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 ) {
                     Text("Cancel")
                 }
             },
-            shape = RoundedCornerShape(20.dp)
+            shape = RoundedCornerShape(20.dp),
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

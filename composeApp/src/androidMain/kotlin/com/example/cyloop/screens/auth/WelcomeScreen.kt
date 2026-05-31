@@ -9,6 +9,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -62,6 +63,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import com.example.cyloop.storage.AuthPreferences
+import com.example.cyloop.theme.getAppBackgroundBrush
 import cyloop.composeapp.generated.resources.Res
 import cyloop.composeapp.generated.resources.logo
 import org.jetbrains.compose.resources.painterResource
@@ -103,6 +105,7 @@ fun WelcomeScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(getAppBackgroundBrush())
     ) {
         Column(
             modifier = Modifier
@@ -117,15 +120,16 @@ fun WelcomeScreen(
             Box(
                 modifier = Modifier
                     .size(140.dp)
-                    .clip(CircleShape),
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
                 // Inner circle
                 Box(
                     modifier = Modifier
-                        .size(150.dp)
+                        .size(130.dp)
                         .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.95f)),
+                        .background(MaterialTheme.colorScheme.surface),
                     contentAlignment = Alignment.Center
                 ) {
                     // Logo image with curved shape
@@ -133,7 +137,7 @@ fun WelcomeScreen(
                         painter = painterResource(Res.drawable.logo),
                         contentDescription = "Cyloop Logo",
                         modifier = Modifier
-                            .size(150.dp)
+                            .size(110.dp)
                             .clip(CircleShape),
                         contentScale = ContentScale.Crop
                     )
@@ -155,10 +159,10 @@ fun WelcomeScreen(
 
             Text(
                 text = "Stay Invisible",
-                fontSize = 20.sp,
-                fontFamily = FontFamily.Monospace,
+                fontSize = 24.sp,
                 fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 1.5.sp
+                color = MaterialTheme.colorScheme.primary,
+                letterSpacing = 1.sp
             )
 
             Spacer(modifier = Modifier.height(100.dp))
@@ -167,23 +171,17 @@ fun WelcomeScreen(
             Box(
                 modifier = Modifier
                     .background(
-                        brush = Brush.horizontalGradient(
-                            colors = listOf(
-                                Color.White.copy(alpha = 0.2f),
-                                Color.White.copy(alpha = 0.1f),
-                                Color.White.copy(alpha = 0.2f)
-                            )
-                        ),
-                        shape = RoundedCornerShape(50.dp)
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
+                        shape = RoundedCornerShape(24.dp)
                     )
-                    .padding(horizontal = 20.dp, vertical = 10.dp)
+                    .padding(horizontal = 20.dp, vertical = 12.dp)
             ) {
                 Text(
                     text = "Get started by creating a new account or signing in to an existing one.",
                     fontSize = 14.sp,
-                    color = Color.DarkGray,
-                    fontWeight = FontWeight.Medium,
-                    letterSpacing = 1.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Normal,
+                    letterSpacing = 0.5.sp,
                     textAlign = TextAlign.Center
                 )
             }
@@ -234,26 +232,19 @@ fun WelcomeScreen(
                     },
                     modifier = Modifier
                         .weight(1f)
-                        .height(52.dp)
-                        .shadow(
-                            elevation = 8.dp,
-                            shape = RoundedCornerShape(5.dp),
-                            ambientColor = Color(0xFF4A90E2),
-                            spotColor = Color(0xFF4A90E2)
-                        ),
-                    shape = RoundedCornerShape(5.dp),
+                        .height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF4A90E2),
-                        contentColor = Color.White
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
                     ),
-                    contentPadding = PaddingValues(0.dp)
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
                 ) {
                     Text(
                         text = "CREATE A NEW ACCOUNT",
                         fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 1.5.sp,
-                        modifier = Modifier.padding(horizontal = 16.dp)
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
                     )
                 }
 
@@ -261,27 +252,20 @@ fun WelcomeScreen(
                 Button(
                     onClick = { showNetworkDialog = true },
                     modifier = Modifier
-                        .size(52.dp)
-                        .shadow(
-                            elevation = 8.dp,
-                            shape = RoundedCornerShape(5.dp),
-                            ambientColor = Color(0xFF4A90E2),
-                            spotColor = Color(0xFF4A90E2)
-                        ),
-                    shape = RoundedCornerShape(5.dp),
+                        .size(56.dp),
+                    shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White,
-                        contentColor = Color(0xFF203A43)
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.primary
                     ),
-                    contentPadding = PaddingValues(0.dp)
+                    contentPadding = PaddingValues(0.dp),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Settings,
                         contentDescription = "Settings",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(14.dp),
-                        tint = Color(0xFF203A43)
+                        modifier = Modifier.size(28.dp),
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -312,7 +296,7 @@ fun WelcomeScreen(
             },
             sheetState = sheetState,
             shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         ) {
             Column(
                 modifier = Modifier
@@ -325,7 +309,7 @@ fun WelcomeScreen(
                     text = "Login / Signup",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Spacer(modifier = Modifier.height(28.dp))
@@ -334,7 +318,7 @@ fun WelcomeScreen(
                 OutlinedTextField(
                     value = username,
                     onValueChange = { username = it },
-                    label = { Text("Username", color = Color(0xFF1976D2)) },
+                    label = { Text("Username", color = MaterialTheme.colorScheme.primary) },
                     placeholder = { Text("Enter your username") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
@@ -353,8 +337,8 @@ fun WelcomeScreen(
                         .height(54.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF4A90E2),
-                        contentColor = Color.White
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
                     )
                 ) {
                     Text("Continue")
@@ -393,11 +377,11 @@ fun NetworkSelectionDialog(
                     .shadow(
                         elevation = 24.dp,
                         shape = RoundedCornerShape(20.dp),
-                        ambientColor = Color.White,
-                        spotColor = Color.White
+                        ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                        spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                     )
                     .clip(RoundedCornerShape(20.dp)),
-                color = Color.White,
+                color = MaterialTheme.colorScheme.surface,
                 onClick = {} // Prevents click from propagating to background
             ) {
                 Column(
@@ -411,7 +395,7 @@ fun NetworkSelectionDialog(
                         text = "Please Select Your Network",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black,
+                        color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(bottom = 24.dp)
                     )
@@ -447,7 +431,7 @@ fun NetworkSelectionDialog(
                                 text = "OK",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = Color(0xFF4A90E2)
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
                     }
@@ -467,20 +451,19 @@ fun NetworkButton(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .height(52.dp)
-            .shadow(
-                elevation = 2.dp,
-                shape = RoundedCornerShape(12.dp),
-                clip = false
-            ),
+            .height(52.dp),
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = Color.White,
-            contentColor = Color(0xFF1A1A2E)
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            contentColor = MaterialTheme.colorScheme.primary
+        ),
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
         ),
         elevation = ButtonDefaults.buttonElevation(
-            defaultElevation = 0.dp,
-            pressedElevation = 2.dp
+            defaultElevation = 2.dp,
+            pressedElevation = 4.dp
         )
     ) {
         Text(

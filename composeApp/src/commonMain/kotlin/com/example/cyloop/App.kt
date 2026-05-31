@@ -19,10 +19,12 @@ import org.jetbrains.compose.resources.painterResource
 import cyloop.composeapp.generated.resources.Res
 import cyloop.composeapp.generated.resources.compose_multiplatform
 
+import com.example.cyloop.theme.CyLoopTheme
+
 @Composable
 @Preview
 fun App() {
-    MaterialTheme {
+    CyLoopTheme {
         var showContent by remember { mutableStateOf(false) }
         Column(
             modifier = Modifier

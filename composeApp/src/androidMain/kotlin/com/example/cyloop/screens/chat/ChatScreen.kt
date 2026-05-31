@@ -1,6 +1,7 @@
 package com.example.cyloop.screens.chat
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -51,10 +52,12 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import java.util.Date
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.ui.layout.ContentScale
 import cyloop.composeapp.generated.resources.Res
 import cyloop.composeapp.generated.resources.person2
 import org.jetbrains.compose.resources.painterResource
+import com.example.cyloop.theme.getAppBackgroundBrush
 
 data class Chat(
     val id: String,
@@ -130,14 +133,7 @@ fun ChatScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFFE8F5E9),  // Top
-                        Color(0xFFE3F2FD)   // Bottom
-                    )
-                )
-            )
+            .background(getAppBackgroundBrush())
     ) {
         Column(
             modifier = Modifier.fillMaxSize().statusBarsPadding()
@@ -153,7 +149,7 @@ fun ChatScreen(
                     text = "Chats",
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0D47A1)
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
 
@@ -217,8 +213,8 @@ fun ChatScreen(
                 .padding(bottom = bottomPadding + 16.dp, end = 16.dp)
                 .size(56.dp),
             shape = CircleShape,
-            containerColor = Color(0xFF2196F3),
-            contentColor = Color.White
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
@@ -243,7 +239,12 @@ fun ChatCell(
                 spotColor = Color.Black.copy(alpha = 0.15f)
             )
             .background(
-                Color.White.copy(alpha = 0.95f),
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                shape = RoundedCornerShape(16.dp)
+            )
+            .border(
+                width = 0.5.dp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
                 shape = RoundedCornerShape(16.dp)
             )
             .clip(RoundedCornerShape(16.dp))
@@ -304,7 +305,7 @@ fun ChatCell(
                     text = chat.name,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF1A1A1A),
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
@@ -313,7 +314,7 @@ fun ChatCell(
                 Text(
                     text = formatTime(chat.time),
                     fontSize = 11.sp,
-                    color = Color(0xFF888888)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -327,7 +328,7 @@ fun ChatCell(
                 Text(
                     text = chat.lastMessage,
                     fontSize = 13.sp,
-                    color = if (chat.unreadCount > 0) Color(0xFF1A1A1A) else Color(0xFF666666),
+                    color = if (chat.unreadCount > 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     fontWeight = if (chat.unreadCount > 0) FontWeight.Medium else FontWeight.Normal,
