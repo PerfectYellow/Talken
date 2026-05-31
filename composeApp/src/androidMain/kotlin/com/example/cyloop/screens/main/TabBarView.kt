@@ -27,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -85,6 +86,7 @@ fun TabBarView(
     var selectedScreen by remember(initialTab) { 
         mutableStateOf(BottomNavScreen.fromRoute(initialTab)) 
     }
+    val saveableStateHolder = rememberSaveableStateHolder()
 
     val bottomBarHeight = 90.dp
 
@@ -99,34 +101,36 @@ fun TabBarView(
             modifier = Modifier.fillMaxSize()
         ) {
             Crossfade(targetState = selectedScreen, animationSpec = tween(400)) { screen ->
-                when (screen) {
-                    BottomNavScreen.Profile -> ProfileScreen(
-                        onSignOut = onSignOut,
-                        userName = "kaay",
-                        userBalance = "0.0 Sol",
-                        qrCodeBitmap = null,
-                        onLogoutClick = onSignOut,
-                        onQrCodeClick = {},
-                        walletAddress = "9xQq...3fGt",
-                        onManageLogsClick = {},
-                        onCopyAddressClick = {},
-                        onExportWalletClick = {},
-                        onPasscodeLockClick = onNavigateToPasscodeLock,
-                        bottomPadding = bottomBarHeight
-                    )
-                    BottomNavScreen.Wallet -> WalletScreen(
-                        onWalletDetailClick = onNavigateToWalletDetail,
-                        onPaymentClick = onNavigateToPayment,
-                        bottomPadding = bottomBarHeight
-                    )
-                    BottomNavScreen.Flow -> FlowScreen(
-                        bottomPadding = bottomBarHeight
-                    )
-                    BottomNavScreen.Chats -> ChatScreen(
-                        onChatClick = onNavigateToChatDetail,
-                        onNewChatClick = onNavigateToNewChat,
-                        bottomPadding = bottomBarHeight
-                    )
+                saveableStateHolder.SaveableStateProvider(screen.route) {
+                    when (screen) {
+                        BottomNavScreen.Profile -> ProfileScreen(
+                            onSignOut = onSignOut,
+                            userName = "kaay",
+                            userBalance = "0.0 Sol",
+                            qrCodeBitmap = null,
+                            onLogoutClick = onSignOut,
+                            onQrCodeClick = {},
+                            walletAddress = "9xQq...3fGt",
+                            onManageLogsClick = {},
+                            onCopyAddressClick = {},
+                            onExportWalletClick = {},
+                            onPasscodeLockClick = onNavigateToPasscodeLock,
+                            bottomPadding = bottomBarHeight
+                        )
+                        BottomNavScreen.Wallet -> WalletScreen(
+                            onWalletDetailClick = onNavigateToWalletDetail,
+                            onPaymentClick = onNavigateToPayment,
+                            bottomPadding = bottomBarHeight
+                        )
+                        BottomNavScreen.Flow -> FlowScreen(
+                            bottomPadding = bottomBarHeight
+                        )
+                        BottomNavScreen.Chats -> ChatScreen(
+                            onChatClick = onNavigateToChatDetail,
+                            onNewChatClick = onNavigateToNewChat,
+                            bottomPadding = bottomBarHeight
+                        )
+                    }
                 }
             }
         }

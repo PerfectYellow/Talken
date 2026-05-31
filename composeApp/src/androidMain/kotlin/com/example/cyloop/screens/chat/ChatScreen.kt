@@ -9,6 +9,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -62,7 +63,7 @@ fun ChatScreen(
                 id = "1",
                 name = "Alex Crypto",
                 lastMessage = "Sent you 1.5 SOL for lunch",
-                time = Date(),
+                time = Date(System.currentTimeMillis() - 3600000), // 1 hour ago
                 unreadCount = 1,
                 avatarColor = Color(0xFFB39DDB), // Purple
                 isActive = false
@@ -71,7 +72,7 @@ fun ChatScreen(
                 id = "2",
                 name = "Mia SNS Handle",
                 lastMessage = "swap request is completed!",
-                time = Date(System.currentTimeMillis() - 3600000),
+                time = Date(System.currentTimeMillis() - 7200000), // 2 hours ago
                 unreadCount = 0,
                 avatarColor = Color(0xFFF5D45E), // Gold
                 isActive = false
@@ -80,9 +81,117 @@ fun ChatScreen(
                 id = "3",
                 name = "Dinner Group Split",
                 lastMessage = "Invoice Split: $75.00 Due",
-                time = Date(System.currentTimeMillis() - 7200000),
+                time = Date(System.currentTimeMillis() - 86400000), // 1 day ago
                 unreadCount = 0,
                 avatarColor = Color(0xFF90A4AE), // Gray
+                isActive = true
+            ),
+            Chat(
+                id = "4",
+                name = "Sarah DeFi",
+                lastMessage = "LP rewards are ready to claim! 🎉",
+                time = Date(System.currentTimeMillis() - 43200000), // 12 hours ago
+                unreadCount = 3,
+                avatarColor = Color(0xFF81C784), // Green
+                isActive = true
+            ),
+            Chat(
+                id = "5",
+                name = "Web3 Collective",
+                lastMessage = "New proposal: Increase treasury allocation",
+                time = Date(System.currentTimeMillis() - 172800000), // 2 days ago
+                unreadCount = 12,
+                avatarColor = Color(0xFF64B5F6), // Blue
+                isActive = false
+            ),
+            Chat(
+                id = "6",
+                name = "James NFT",
+                lastMessage = "Your bid on 'Cosmic Ape #42' was accepted!",
+                time = Date(System.currentTimeMillis() - 21600000), // 6 hours ago
+                unreadCount = 0,
+                avatarColor = Color(0xFFFF8A65), // Coral
+                isActive = true
+            ),
+            Chat(
+                id = "7",
+                name = "Solana Stakers",
+                lastMessage = "Staking APY increased to 7.2%",
+                time = Date(System.currentTimeMillis() - 5400000), // 1.5 hours ago
+                unreadCount = 2,
+                avatarColor = Color(0xFFBA68C8), // Lavender
+                isActive = false
+            ),
+            Chat(
+                id = "8",
+                name = "Rachel (Merchant)",
+                lastMessage = "Payment received: 0.5 SOL for coffee ☕",
+                time = Date(System.currentTimeMillis() - 10800000), // 3 hours ago
+                unreadCount = 0,
+                avatarColor = Color(0xFFFFD54F), // Amber
+                isActive = false
+            ),
+            Chat(
+                id = "9",
+                name = "DAO Treasury Bot",
+                lastMessage = "Weekly report: +124 SOL in fees",
+                time = Date(System.currentTimeMillis() - 259200000), // 3 days ago
+                unreadCount = 0,
+                avatarColor = Color(0xFF4DB6AC), // Teal
+                isActive = true
+            ),
+            Chat(
+                id = "10",
+                name = "Chris (Support)",
+                lastMessage = "Ticket #5042 has been resolved ✅",
+                time = Date(System.currentTimeMillis() - 14400000), // 4 hours ago
+                unreadCount = 0,
+                avatarColor = Color(0xFFE57373), // Light Red
+                isActive = false
+            ),
+            Chat(
+                id = "11",
+                name = "Elena Web3",
+                lastMessage = "Thanks for the NFT! 🎨",
+                time = Date(System.currentTimeMillis() - 7200000), // 2 hours ago
+                unreadCount = 0,
+                avatarColor = Color(0xFF9575CD), // Deep Purple
+                isActive = true
+            ),
+            Chat(
+                id = "12",
+                name = "Validator Node",
+                lastMessage = "Your delegation rewards: 0.23 SOL",
+                time = Date(System.currentTimeMillis() - 21600000), // 6 hours ago
+                unreadCount = 0,
+                avatarColor = Color(0xFF4FC3F7), // Light Blue
+                isActive = false
+            ),
+            Chat(
+                id = "13",
+                name = "Metaverse Group",
+                lastMessage = "Land auction starts tomorrow at 3PM UTC",
+                time = Date(System.currentTimeMillis() - 3600000), // 1 hour ago
+                unreadCount = 5,
+                avatarColor = Color(0xFFFF8A80), // Light Red
+                isActive = false
+            ),
+            Chat(
+                id = "14",
+                name = "Staking Pool",
+                lastMessage = "New pool APY: 8.5% for SOL",
+                time = Date(System.currentTimeMillis() - 86400000), // 1 day ago
+                unreadCount = 0,
+                avatarColor = Color(0xFFAED581), // Light Green
+                isActive = false
+            ),
+            Chat(
+                id = "15",
+                name = "Dev DAO",
+                lastMessage = "Hackathon winners announced! 🏆",
+                time = Date(System.currentTimeMillis() - 129600000), // 1.5 days ago
+                unreadCount = 2,
+                avatarColor = Color(0xFFFFB74D), // Orange
                 isActive = true
             )
         )
@@ -91,6 +200,7 @@ fun ChatScreen(
     var isRefreshing by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
     val pullToRefreshState = rememberPullToRefreshState()
+    val scrollState = rememberLazyListState()
 
     Box(
         modifier = Modifier
@@ -142,6 +252,7 @@ fun ChatScreen(
                 modifier = Modifier.fillMaxSize()
             ) {
                 LazyColumn(
+                    state = scrollState,
                     modifier = Modifier
                         .fillMaxSize()
                         .graphicsLayer {
@@ -152,7 +263,10 @@ fun ChatScreen(
                     contentPadding = PaddingValues(top = 16.dp, start = 16.dp, end = 16.dp, bottom = bottomPadding + 32.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(chats) { chat ->
+                    items(
+                        items = chats,
+                        key = { chat -> chat.id }
+                    ) { chat ->
                         ChatCell(
                             chat = chat,
                             onClick = { onChatClick(chat.id, chat.name) }

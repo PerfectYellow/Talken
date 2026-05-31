@@ -17,8 +17,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.cyloop.theme.CyLoopTheme
 
 @Composable
 fun FlowCell(
@@ -26,6 +28,28 @@ fun FlowCell(
     modifier: Modifier = Modifier,
 ) {
     val isDark = isSystemInDarkTheme()
+
+    fun getColorForPostId(postId: String): Color {
+        val colors = listOf(
+            Color(0xFFA18BFF), // Purple
+            Color(0xFFF5D45E), // Gold
+            Color(0xFF81C784), // Green
+            Color(0xFF64B5F6), // Blue
+            Color(0xFFFF8A65), // Coral
+            Color(0xFFBA68C8), // Lavender
+            Color(0xFFFFD54F), // Amber
+            Color(0xFF4DB6AC), // Teal
+            Color(0xFFE57373), // Light Red
+            Color(0xFF9575CD), // Deep Purple
+            Color(0xFF4FC3F7), // Light Blue
+            Color(0xFFFF8A80), // Light Red
+            Color(0xFFAED581), // Light Green
+            Color(0xFFFFB74D)  // Orange
+        )
+
+        val index = postId.hashCode().mod(colors.size)
+        return colors[index]
+    }
     
     Card(
         modifier = modifier
@@ -72,7 +96,7 @@ fun FlowCell(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .background(if (flowItem.postId == "1") Color(0xFFA18BFF) else Color(0xFFF5D45E))
+                        .background(getColorForPostId(flowItem.postId))
                 )
 
                 Spacer(modifier = Modifier.width(12.dp))
@@ -191,3 +215,25 @@ fun FlowCell(
     }
 }
 
+@Preview(showBackground = true)
+@Composable
+fun FlowCellPreview() {
+    CyLoopTheme(darkTheme = true) {
+        FlowCell(
+            flowItem = PostItem(
+                postId = "7",
+                signature = "Yza...99nW",
+                author = Author(
+                    wallet = "sol_dev_dao_wallet",
+                    username = "solana_devs.sol",
+                    avatar = null
+                ),
+                content = Content(
+                    text = "Workshop tomorrow: 'Build Your First Solana Smart Contract in Rust' - Free for all DAO members. 500 participants already registered! 🦀"
+                ),
+                stats = Stats(likes = 789, comments = 145),
+                createdAt = System.currentTimeMillis() - 345600000 // 4 days ago
+            )
+        )
+    }
+}
