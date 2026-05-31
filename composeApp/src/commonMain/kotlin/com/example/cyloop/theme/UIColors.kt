@@ -11,35 +11,34 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
-// Telegram-inspired Light Colors
+// Updated Dark Colors based on image
+val CyLoopDarkBg = Color(0xFF0B0B15)
+val CyLoopDarkSurface = Color(0xFF151525)
+val CyLoopDarkSurfaceVariant = Color(0xFF1E1E2E)
+val CyLoopGold = Color(0xFFF5D45E)
+val CyLoopPurple = Color(0xFF9E86FF)
+val CyLoopTextDark = Color(0xFFFFFFFF)
+val CyLoopTextSecondaryDark = Color(0xFF8E8E93)
+
+// Light Mode Colors
 val TelegramBlue = Color(0xFF2481CC)
 val TelegramLightBlue = Color(0xFF50A2E3)
-val TelegramBgLight = Color(0xFFFFFFFF)
-val TelegramSurfaceLight = Color(0xFFF1F1F1)
 val TelegramTextLight = Color(0xFF000000)
-val TelegramTextSecondaryLight = Color(0xFF8E8E93)
-
-// Telegram-inspired Dark Colors
-val TelegramBgDark = Color(0xFF0E1621)
-val TelegramSurfaceDark = Color(0xFF17212B)
-val TelegramSurfaceVariantDark = Color(0xFF242F3D)
-val TelegramTextDark = Color(0xFFFFFFFF)
-val TelegramTextSecondaryDark = Color(0xFF7F91A4)
-val TelegramAccentDark = Color(0xFF64B5F6)
+val TelegramTextSecondaryLight = Color(0xFF636366)
 
 private val DarkColorScheme = darkColorScheme(
-    primary = TelegramAccentDark,
-    secondary = TelegramLightBlue,
+    primary = CyLoopGold,
+    secondary = CyLoopPurple,
     tertiary = Color(0xFF82B1FF),
-    background = TelegramBgDark,
-    surface = TelegramSurfaceDark,
-    surfaceVariant = TelegramSurfaceVariantDark,
-    onPrimary = Color.White,
+    background = CyLoopDarkBg,
+    surface = CyLoopDarkSurface,
+    surfaceVariant = CyLoopDarkSurfaceVariant,
+    onPrimary = Color.Black,
     onSecondary = Color.White,
     onTertiary = Color.White,
-    onBackground = TelegramTextDark,
-    onSurface = TelegramTextDark,
-    onSurfaceVariant = TelegramTextSecondaryDark,
+    onBackground = CyLoopTextDark,
+    onSurface = CyLoopTextDark,
+    onSurfaceVariant = CyLoopTextSecondaryDark,
     primaryContainer = Color(0xFF1D2733),
     onPrimaryContainer = Color.White,
     error = Color(0xFFCF6679),
@@ -50,9 +49,9 @@ private val LightColorScheme = lightColorScheme(
     primary = TelegramBlue,
     secondary = TelegramLightBlue,
     tertiary = Color(0xFF40B7E0),
-    background = TelegramBgLight,
-    surface = TelegramSurfaceLight,
-    surfaceVariant = Color(0xFFEBEDF0),
+    background = Color(0xFFF2F2F7),
+    surface = Color.White,
+    surfaceVariant = Color.White,
     onPrimary = Color.White,
     onSecondary = Color.White,
     onTertiary = Color.White,
@@ -68,9 +67,9 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun getAppBackgroundBrush(): Brush {
     return if (isSystemInDarkTheme()) {
-        Brush.verticalGradient(listOf(Color(0xFF1D2733), Color(0xFF0E1621)))
+        Brush.verticalGradient(listOf(CyLoopDarkBg, Color(0xFF05050A)))
     } else {
-        Brush.verticalGradient(listOf(Color(0xFFE3F2FD), Color(0xFFFFFFFF)))
+        Brush.verticalGradient(listOf(Color(0xFFF2F2F7), Color(0xFFE5E5EA)))
     }
 }
 

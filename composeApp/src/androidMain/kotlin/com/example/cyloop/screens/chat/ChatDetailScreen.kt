@@ -185,7 +185,7 @@ fun MessageBubble(message: Message) {
             Text(
                 text = message.text,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                color = if (message.isFromMe) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (message.isFromMe) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
                 fontSize = 15.sp
             )
         }
