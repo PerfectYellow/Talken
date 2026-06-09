@@ -7,11 +7,13 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -34,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -88,17 +91,19 @@ fun TabBarView(
     }
     val saveableStateHolder = rememberSaveableStateHolder()
 
+    val isDark = isSystemInDarkTheme()
+    val shadowColor = if (isDark) Color.Black else Color.White
+
     val bottomBarHeight = 90.dp
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(getAppBackgroundBrush())
-            .padding(bottom = 3.dp)
     ) {
         // Content area
         Box(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
         ) {
             Crossfade(targetState = selectedScreen, animationSpec = tween(400)) { screen ->
                 saveableStateHolder.SaveableStateProvider(screen.route) {
@@ -120,7 +125,7 @@ fun TabBarView(
                         BottomNavScreen.Wallet -> WalletScreen(
                             onWalletDetailClick = onNavigateToWalletDetail,
                             onPaymentClick = onNavigateToPayment,
-                            bottomPadding = bottomBarHeight
+                            bottomPadding = bottomBarHeight - 24.dp
                         )
                         BottomNavScreen.Flow -> FlowScreen(
                             bottomPadding = bottomBarHeight
@@ -135,12 +140,24 @@ fun TabBarView(
             }
         }
 
-        // Floating Bottom Navigation Bar matching image
+        // Floating Bottom Navigation Bar with a strong bottom-of-screen shadow to obscure content
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(bottom = 16.dp) // Added padding to avoid system navigation bar overlap
+                .height(70.dp) // Covers only the tab bar and the space below it
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            shadowColor.copy(alpha = 0.2f),
+                            shadowColor.copy(alpha = 0.95f)
+                        ),
+                        startY = 0f
+                    )
+                )
+                .padding(bottom = 19.dp), // Keep the bar's floating position
+            contentAlignment = Alignment.BottomCenter
         ) {
             FloatingBottomNavigationBar(
                 selectedScreen = selectedScreen,
@@ -158,6 +175,9 @@ fun FloatingBottomNavigationBar(
     selectedScreen: BottomNavScreen,
     onScreenSelected: (BottomNavScreen) -> Unit
 ) {
+    val isDark = isSystemInDarkTheme()
+    val shadowColor = if (isDark) Color.Black else Color.White
+
     val items = listOf(
         BottomNavScreen.Chats,
         BottomNavScreen.Flow,
@@ -171,14 +191,28 @@ fun FloatingBottomNavigationBar(
             .padding(horizontal = 16.dp),
         contentAlignment = Alignment.Center
     ) {
+        // Dedicated shadow layer with offset to emphasize the shadow below the bar
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.95f)
+                .height(42.dp)
+                .offset(y = 10.dp)
+                .shadow(
+                    elevation = 25.dp,
+                    shape = RoundedCornerShape(32.dp),
+                    spotColor = shadowColor.copy(alpha = 0.75f),
+                    ambientColor = shadowColor.copy(alpha = 0.5f)
+                )
+        )
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(60.dp) // Shrunk height
+                .height(48.dp) // Slightly more compact height
                 .shadow(
-                    elevation = 20.dp,
+                    elevation = 4.dp,
                     shape = RoundedCornerShape(32.dp),
-                    spotColor = Color.Black
+                    spotColor = shadowColor.copy(alpha = 0.1f)
                 )
                 .background(
                     color = MaterialTheme.colorScheme.surface,
@@ -189,7 +223,7 @@ fun FloatingBottomNavigationBar(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f),
                     shape = RoundedCornerShape(32.dp)
                 )
-                .padding(horizontal = 8.dp),
+                .padding(vertical = 2.dp), // Inner padding
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -226,22 +260,21 @@ fun FloatingNavItem(
         modifier = Modifier
             .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
-            .padding(vertical = 4.dp)
             .scale(animatedScale)
-            .width(52.dp) // Shrunk width
+            .width(52.dp)
     ) {
         Icon(
             imageVector = if (isSelected) screen.selectedIcon else screen.icon,
             contentDescription = screen.title,
             tint = animatedColor,
-            modifier = Modifier.size(20.dp) // Shrunk icon
+            modifier = Modifier.size(20.dp)
         )
         
-        Spacer(modifier = Modifier.height(2.dp))
+        Spacer(modifier = Modifier.height(3.dp))
         
         Text(
             text = screen.title,
-            fontSize = 11.sp, // Shrunk font size
+            fontSize = 10.sp, // Slightly smaller text
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
             color = animatedColor
         )

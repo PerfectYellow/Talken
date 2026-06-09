@@ -170,8 +170,8 @@ fun WalletScreen(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(280.dp)
-                    .padding(16.dp),
+                    .height(200.dp)
+                    .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 6.dp),
                 shape = RoundedCornerShape(24.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.Transparent),
@@ -207,43 +207,32 @@ fun WalletScreen(
                                         fontSize = 18.sp,
                                         fontWeight = FontWeight.Bold
                                     )
+                                }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        text = coin.symbol.uppercase(),
-                                        color = if (isDark) Color.White.copy(alpha = 0.6f) else Color.Black.copy(alpha = 0.6f),
-                                        fontSize = 14.sp
+                                        text = "${if (isPositive) "+" else ""}${String.format("%.2f", priceChange)}% (24h)",
+                                        color = chartColor,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Icon(
+                                        imageVector = if (isPositive) Icons.Default.TrendingUp else Icons.Default.TrendingDown,
+                                        contentDescription = null,
+                                        tint = chartColor,
+                                        modifier = Modifier.size(24.dp)
                                     )
                                 }
-                                Icon(
-                                    imageVector = if (isPositive) Icons.Default.TrendingUp else Icons.Default.TrendingDown,
-                                    contentDescription = null,
-                                    tint = chartColor,
-                                    modifier = Modifier.size(24.dp)
-                                )
                             }
 
-                            Spacer(modifier = Modifier.height(10.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
 
                             Text(
                                 text = "$${formatPrice(coin.current_price)}",
                                 color = if (isDark) Color.White else Color.Black,
-                                fontSize = 30.sp,
+                                fontSize = 28.sp,
                                 fontWeight = FontWeight.ExtraBold
                             )
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = if (isPositive) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
-                                    contentDescription = null,
-                                    tint = chartColor,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "${String.format("%.2f", Math.abs(priceChange))}% (24h)",
-                                    color = chartColor,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -269,15 +258,99 @@ fun WalletScreen(
                 }
             }
 
-//            Text(
-//                text = "Market Trends",
-//                fontSize = 20.sp,
-//                fontWeight = FontWeight.ExtraBold,
-//                modifier = Modifier
-//                    .padding(horizontal = 24.dp)
-//                    .padding(bottom = 8.dp),
-//                color = Color(0xFF1A237E)
-//            )
+            // Part 3: Bottom Section
+            val goldColor = Color(0xFFF5D45E)
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Wallet Button with Balance
+                Surface(
+                    modifier = Modifier
+                        .weight(1.4f)
+                        .height(48.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    color = if (isDark) Color.Black else Color.White,
+                    border = BorderStroke(1.dp, if (isDark) goldColor.copy(alpha = 0.5f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
+                    shadowElevation = if (isDark) 4.dp else 2.dp
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .clickable { onWalletDetailClick() }
+                                .padding(start = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.AccountBalanceWallet,
+                                contentDescription = null,
+                                tint = if (isDark) goldColor else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    "Wallet",
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 11.sp,
+                                    color = if (isDark) goldColor.copy(alpha = 0.7f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                                )
+                                Text(
+                                    text = if (isBalanceVisible) "$$userBalance" else "$ ****",
+                                    modifier = Modifier.blur(if (isBalanceVisible) 0.dp else 4.dp),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = if (isDark) Color.White else Color.Black
+                                )
+                            }
+                        }
+
+                        IconButton(
+                            onClick = {
+                                scope.launch {
+                                    AuthPreferences.setBalanceVisible(context, !isBalanceVisible)
+                                }
+                            },
+                            modifier = Modifier.padding(end = 4.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (isBalanceVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                contentDescription = "Toggle Balance",
+                                tint = if (isDark) goldColor.copy(alpha = 0.6f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+
+                // Payment Button
+                Button(
+                    onClick = onPaymentClick,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                        .shadow(if (isDark) 4.dp else 2.dp, RoundedCornerShape(16.dp)),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isDark) goldColor else MaterialTheme.colorScheme.primary,
+                        contentColor = if (isDark) Color.Black else Color.White
+                    ),
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Icon(Icons.Default.Payments, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Payment", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
+                }
+            }
 
             // Part 2: Middle Section - Scrollable List
             Box(modifier = Modifier.weight(1f)) {
@@ -344,101 +417,6 @@ fun WalletScreen(
                         }
                     }
                 }
-            }
-        }
-
-        // Part 3: Bottom Section - Full Width Buttons (Floating Overlay)
-        val goldColor = Color(0xFFF5D45E)
-        
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .padding(bottom = bottomPadding + 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            // Wallet Button with Balance
-            Surface(
-                modifier = Modifier
-                    .weight(1.4f)
-                    .height(48.dp),
-                shape = RoundedCornerShape(16.dp),
-                color = if (isDark) Color.Black else Color.White,
-                border = BorderStroke(1.dp, if (isDark) goldColor.copy(alpha = 0.5f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
-                shadowElevation = if (isDark) 4.dp else 2.dp
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .clickable { onWalletDetailClick() }
-                            .padding(start = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.AccountBalanceWallet,
-                            contentDescription = null,
-                            tint = if (isDark) goldColor else MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text(
-                                "Wallet",
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 11.sp,
-                                color = if (isDark) goldColor.copy(alpha = 0.7f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
-                            )
-                            Text(
-                                text = if (isBalanceVisible) "$$userBalance" else "$ ****",
-                                modifier = Modifier.blur(if (isBalanceVisible) 0.dp else 4.dp),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp,
-                                color = if (isDark) Color.White else Color.Black
-                            )
-                        }
-                    }
-
-                    IconButton(
-                        onClick = {
-                            scope.launch {
-                                AuthPreferences.setBalanceVisible(context, !isBalanceVisible)
-                            }
-                        },
-                        modifier = Modifier.padding(end = 4.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (isBalanceVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = "Toggle Balance",
-                            tint = if (isDark) goldColor.copy(alpha = 0.6f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-            }
-
-            // Payment Button
-            Button(
-                onClick = onPaymentClick,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(48.dp)
-                    .shadow(if (isDark) 4.dp else 2.dp, RoundedCornerShape(16.dp)),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isDark) goldColor else MaterialTheme.colorScheme.primary,
-                    contentColor = if (isDark) Color.Black else Color.White
-                ),
-                contentPadding = PaddingValues(0.dp)
-            ) {
-                Icon(Icons.Default.Payments, contentDescription = null, modifier = Modifier.size(20.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Payment", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
             }
         }
     }
@@ -673,7 +651,7 @@ fun CoinListItem(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .padding(horizontal = 16.dp, vertical = 2.dp)
             .clickable(onClick = onClick)
             .then(
                 if (isSelected) Modifier.border(
@@ -690,7 +668,7 @@ fun CoinListItem(
         },
     ) {
         Row(
-            modifier = Modifier.padding(12.dp).fillMaxWidth(),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Icon section
@@ -698,7 +676,7 @@ fun CoinListItem(
                 model = coin.image,
                 contentDescription = null,
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(30.dp)
                     .clip(CircleShape),
                 contentScale = ContentScale.Fit,
                 onError = {
@@ -713,12 +691,12 @@ fun CoinListItem(
                 Text(
                     text = coin.name,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
+                    fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = coin.symbol.uppercase(),
-                    fontSize = 12.sp,
+                    fontSize = 9.sp,
                     color = Color.Gray
                 )
             }
@@ -727,13 +705,13 @@ fun CoinListItem(
                 Text(
                     text = "$${formatPrice(coin.current_price)}",
                     fontWeight = FontWeight.ExtraBold,
-                    fontSize = 16.sp,
+                    fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 val priceChange = coin.price_change_percentage_24h ?: 0.0
                 Text(
                     text = "${if (priceChange >= 0) "+" else ""}${String.format("%.2f", priceChange)}%",
-                    fontSize = 13.sp,
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (priceChange >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                 )
