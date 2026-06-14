@@ -4,9 +4,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.SystemBarStyle
 import androidx.activity.OnBackPressedCallback
 import android.widget.Toast
 import androidx.annotation.CallSuper
+import androidx.compose.material3.darkColorScheme
 import com.example.cyloop.theme.CyLoopTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -27,11 +29,14 @@ class MainActivity : FragmentActivity() {
     private lateinit var navControllerRef: com.example.cyloop.nav.NavController
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+        )
         super.onCreate(savedInstanceState)
 
         setContent {
-            CyLoopTheme {
+            CyLoopTheme(darkTheme = true) {
                 // Create the navigation controller
                 val navController = rememberNavController()
                 navControllerRef = navController

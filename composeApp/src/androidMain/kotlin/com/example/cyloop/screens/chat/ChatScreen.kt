@@ -32,9 +32,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.cyloop.font.UIFont
 import com.example.cyloop.theme.getAppBackgroundBrush
 import cyloop.composeapp.generated.resources.Res
-import cyloop.composeapp.generated.resources.person2
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
@@ -47,7 +47,6 @@ data class Chat(
     val time: Date,
     val unreadCount: Int,
     val avatarColor: Color,
-    val isActive: Boolean = false
 )
 
 @Composable
@@ -66,7 +65,6 @@ fun ChatScreen(
                 time = Date(System.currentTimeMillis() - 3600000), // 1 hour ago
                 unreadCount = 1,
                 avatarColor = Color(0xFFB39DDB), // Purple
-                isActive = false
             ),
             Chat(
                 id = "2",
@@ -75,7 +73,6 @@ fun ChatScreen(
                 time = Date(System.currentTimeMillis() - 7200000), // 2 hours ago
                 unreadCount = 0,
                 avatarColor = Color(0xFFF5D45E), // Gold
-                isActive = false
             ),
             Chat(
                 id = "3",
@@ -84,7 +81,6 @@ fun ChatScreen(
                 time = Date(System.currentTimeMillis() - 86400000), // 1 day ago
                 unreadCount = 0,
                 avatarColor = Color(0xFF90A4AE), // Gray
-                isActive = true
             ),
             Chat(
                 id = "4",
@@ -93,7 +89,6 @@ fun ChatScreen(
                 time = Date(System.currentTimeMillis() - 43200000), // 12 hours ago
                 unreadCount = 3,
                 avatarColor = Color(0xFF81C784), // Green
-                isActive = true
             ),
             Chat(
                 id = "5",
@@ -102,7 +97,6 @@ fun ChatScreen(
                 time = Date(System.currentTimeMillis() - 172800000), // 2 days ago
                 unreadCount = 12,
                 avatarColor = Color(0xFF64B5F6), // Blue
-                isActive = false
             ),
             Chat(
                 id = "6",
@@ -111,7 +105,6 @@ fun ChatScreen(
                 time = Date(System.currentTimeMillis() - 21600000), // 6 hours ago
                 unreadCount = 0,
                 avatarColor = Color(0xFFFF8A65), // Coral
-                isActive = true
             ),
             Chat(
                 id = "7",
@@ -120,7 +113,6 @@ fun ChatScreen(
                 time = Date(System.currentTimeMillis() - 5400000), // 1.5 hours ago
                 unreadCount = 2,
                 avatarColor = Color(0xFFBA68C8), // Lavender
-                isActive = false
             ),
             Chat(
                 id = "8",
@@ -129,7 +121,6 @@ fun ChatScreen(
                 time = Date(System.currentTimeMillis() - 10800000), // 3 hours ago
                 unreadCount = 0,
                 avatarColor = Color(0xFFFFD54F), // Amber
-                isActive = false
             ),
             Chat(
                 id = "9",
@@ -138,7 +129,6 @@ fun ChatScreen(
                 time = Date(System.currentTimeMillis() - 259200000), // 3 days ago
                 unreadCount = 0,
                 avatarColor = Color(0xFF4DB6AC), // Teal
-                isActive = true
             ),
             Chat(
                 id = "10",
@@ -147,7 +137,6 @@ fun ChatScreen(
                 time = Date(System.currentTimeMillis() - 14400000), // 4 hours ago
                 unreadCount = 0,
                 avatarColor = Color(0xFFE57373), // Light Red
-                isActive = false
             ),
             Chat(
                 id = "11",
@@ -156,7 +145,6 @@ fun ChatScreen(
                 time = Date(System.currentTimeMillis() - 7200000), // 2 hours ago
                 unreadCount = 0,
                 avatarColor = Color(0xFF9575CD), // Deep Purple
-                isActive = true
             ),
             Chat(
                 id = "12",
@@ -165,7 +153,6 @@ fun ChatScreen(
                 time = Date(System.currentTimeMillis() - 21600000), // 6 hours ago
                 unreadCount = 0,
                 avatarColor = Color(0xFF4FC3F7), // Light Blue
-                isActive = false
             ),
             Chat(
                 id = "13",
@@ -174,7 +161,6 @@ fun ChatScreen(
                 time = Date(System.currentTimeMillis() - 3600000), // 1 hour ago
                 unreadCount = 5,
                 avatarColor = Color(0xFFFF8A80), // Light Red
-                isActive = false
             ),
             Chat(
                 id = "14",
@@ -183,7 +169,6 @@ fun ChatScreen(
                 time = Date(System.currentTimeMillis() - 86400000), // 1 day ago
                 unreadCount = 0,
                 avatarColor = Color(0xFFAED581), // Light Green
-                isActive = false
             ),
             Chat(
                 id = "15",
@@ -192,7 +177,6 @@ fun ChatScreen(
                 time = Date(System.currentTimeMillis() - 129600000), // 1.5 days ago
                 unreadCount = 2,
                 avatarColor = Color(0xFFFFB74D), // Orange
-                isActive = true
             )
         )
     }
@@ -220,8 +204,7 @@ fun ChatScreen(
             ) {
                 Text(
                     text = "Chats",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
+                    style = UIFont.LargeTitle,
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 
@@ -261,7 +244,7 @@ fun ChatScreen(
                             transformOrigin = TransformOrigin(0.5f, 0f)
                         },
                     contentPadding = PaddingValues(top = 16.dp, start = 16.dp, end = 16.dp, bottom = bottomPadding + 32.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
                     items(
                         items = chats,
@@ -283,18 +266,12 @@ fun ChatCell(
     chat: Chat,
     onClick: () -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
-    val borderColor = if (chat.isActive) {
-        MaterialTheme.colorScheme.primary
-    } else {
+    val isDark = true //isSystemInDarkTheme()
+    val borderColor =
         if (isDark) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.04f)
-    }
 
-    val cellBackground = if (isDark) {
+    val cellBackground =
         MaterialTheme.colorScheme.surface
-    } else {
-        if (chat.isActive) Color(0xFFF0F7FF) else Color.White
-    }
 
     Surface(
         onClick = onClick,
@@ -304,12 +281,12 @@ fun ChatCell(
         shape = RoundedCornerShape(20.dp),
         color = cellBackground,
         tonalElevation = if (isDark) 4.dp else 0.dp,
-        border = BorderStroke(if (chat.isActive) 1.5.dp else 1.dp, borderColor),
+        border = BorderStroke( 1.dp, borderColor),
         shadowElevation = if (isDark) 0.dp else 4.dp
     ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 20.dp, vertical = 18.dp),
+                .padding(horizontal = 20.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Avatar with letter
@@ -322,8 +299,7 @@ fun ChatCell(
             ) {
                 Text(
                     text = chat.name.take(1).uppercase(),
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
+                    style = UIFont.AvatarLabel,
                     color = Color.White.copy(alpha = 0.9f)
                 )
             }
@@ -336,9 +312,8 @@ fun ChatCell(
             ) {
                 Text(
                     text = chat.name,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (chat.isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    style = UIFont.ChatName,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -347,7 +322,7 @@ fun ChatCell(
 
                 Text(
                     text = chat.lastMessage,
-                    fontSize = 14.sp,
+                    style = UIFont.ChatMessage,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -356,16 +331,7 @@ fun ChatCell(
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Unread count or Active status
-            if (chat.isActive) {
-                Text(
-                    text = "ACTIVE",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    letterSpacing = 1.sp
-                )
-            } else if (chat.unreadCount > 0) {
+            if (chat.unreadCount > 0) {
                 Box(
                     modifier = Modifier
                         .size(26.dp)
@@ -375,8 +341,7 @@ fun ChatCell(
                 ) {
                     Text(
                         text = chat.unreadCount.toString(),
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = UIFont.Badge,
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 }

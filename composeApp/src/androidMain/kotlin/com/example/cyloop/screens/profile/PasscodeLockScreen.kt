@@ -118,12 +118,7 @@ fun PasscodeLockScreen(
                                     .size(48.dp)
                                     .clip(CircleShape)
                                     .background(
-                                        Brush.linearGradient(
-                                            colors = listOf(
-                                                MaterialTheme.colorScheme.primary,
-                                                MaterialTheme.colorScheme.secondary
-                                            )
-                                        )
+                                        MaterialTheme.colorScheme.primary
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
@@ -203,7 +198,7 @@ fun PasscodeLockScreen(
                                                 Brush.linearGradient(
                                                     colors = listOf(
                                                         MaterialTheme.colorScheme.primary,
-                                                        MaterialTheme.colorScheme.secondary
+                                                        MaterialTheme.colorScheme.primary
                                                     )
                                                 )
                                             else

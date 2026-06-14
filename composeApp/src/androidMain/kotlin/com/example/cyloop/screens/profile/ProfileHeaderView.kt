@@ -18,6 +18,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.cyloop.font.UIFont
 
 @Composable
 fun ProfileHeaderWithQRElegant(
@@ -53,12 +54,7 @@ fun ProfileHeaderWithQRElegant(
                         .size(70.dp)
                         .clip(CircleShape)
                         .background(
-                            Brush.linearGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.primary,
-                                    MaterialTheme.colorScheme.secondary
-                                )
-                            )
+                            MaterialTheme.colorScheme.primary
                         ),
                     contentAlignment = Alignment.Center
                 ) {
@@ -75,13 +71,12 @@ fun ProfileHeaderWithQRElegant(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = userName,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = UIFont.LargeTitle,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                     Text(
                         text = "Balance: $userBalance",
-                        fontSize = 14.sp,
+                        style = UIFont.Metadata,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                     )
                 }

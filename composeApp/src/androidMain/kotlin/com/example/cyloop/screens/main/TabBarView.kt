@@ -13,10 +13,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -39,6 +42,8 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -91,10 +96,12 @@ fun TabBarView(
     }
     val saveableStateHolder = rememberSaveableStateHolder()
 
-    val isDark = isSystemInDarkTheme()
+    val isDark = true // isSystemInDarkTheme()
     val shadowColor = if (isDark) Color.Black else Color.White
 
-    val bottomBarHeight = 90.dp
+    // Calculate dynamic padding for the bottom safe area (gesture pill or buttons)
+    val navigationBarsPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val bottomBarHeight = 90.dp + navigationBarsPadding
 
     Box(
         modifier = Modifier
@@ -145,7 +152,7 @@ fun TabBarView(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .height(70.dp) // Covers only the tab bar and the space below it
+                .height(70.dp + navigationBarsPadding) // Accounts for system navigation buttons height
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
@@ -156,7 +163,7 @@ fun TabBarView(
                         startY = 0f
                     )
                 )
-                .padding(bottom = 19.dp), // Keep the bar's floating position
+                .padding(bottom = navigationBarsPadding), // Keeps the bar 19dp above the system buttons
             contentAlignment = Alignment.BottomCenter
         ) {
             FloatingBottomNavigationBar(
@@ -267,16 +274,22 @@ fun FloatingNavItem(
             imageVector = if (isSelected) screen.selectedIcon else screen.icon,
             contentDescription = screen.title,
             tint = animatedColor,
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(25.dp)
         )
         
-        Spacer(modifier = Modifier.height(3.dp))
+        Spacer(modifier = Modifier.height(0.dp))
         
         Text(
             text = screen.title,
-            fontSize = 10.sp, // Slightly smaller text
+            fontSize = 10.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-            color = animatedColor
+            color = animatedColor,
+            style = TextStyle(
+                platformStyle = PlatformTextStyle(
+                    includeFontPadding = false
+                ),
+                lineHeight = 10.sp
+            )
         )
     }
 }

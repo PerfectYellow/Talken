@@ -34,6 +34,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.example.cyloop.font.UIFont
 import com.example.cyloop.storage.AuthPreferences
 import com.example.cyloop.theme.getAppBackgroundBrush
 import com.example.cyloop.screens.main.TabBarView
@@ -112,7 +113,7 @@ fun WalletScreen(
     val isBalanceVisible by AuthPreferences.isBalanceVisible(context).collectAsState(initial = true)
     val userBalance = "1,234.56"
 
-    val isDark = isSystemInDarkTheme()
+    val isDark = true //isSystemInDarkTheme()
     val backgroundGradient = getAppBackgroundBrush()
 
     LaunchedEffect(Unit) {
@@ -161,7 +162,9 @@ fun WalletScreen(
             .fillMaxSize()
             .background(backgroundGradient)
     ) {
-        Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
+        Column(modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()) {
             // Part 1: Top Section - Chart Card
             val priceChange = selectedCoin?.price_change_percentage_24h ?: 0.0
             val isPositive = priceChange >= 0
@@ -191,67 +194,80 @@ fun WalletScreen(
                                 )
                             }
                         )
-                        .padding(20.dp)
+                        .padding(vertical = 20.dp)
                 ) {
                     Column {
-                        selectedCoin?.let { coin ->
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Column {
-                                    Text(
-                                        text = coin.name,
-                                        color = if (isDark) Color.White else Color.Black,
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
+                        Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                            selectedCoin?.let { coin ->
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = coin.name,
+                                            color = if (isDark) Color.White else Color.Black,
+                                            style = UIFont.ChatName
+                                        )
+                                    }
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = "${if (isPositive) "+" else ""}${
+                                                String.format(
+                                                    "%.2f",
+                                                    priceChange
+                                                )
+                                            }% (24h)",
+                                            color = chartColor,
+                                            style = UIFont.Metadata.copy(fontWeight = FontWeight.Bold)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Icon(
+                                            imageVector = if (isPositive) Icons.Default.TrendingUp else Icons.Default.TrendingDown,
+                                            contentDescription = null,
+                                            tint = chartColor,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
                                 }
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = "${if (isPositive) "+" else ""}${String.format("%.2f", priceChange)}% (24h)",
-                                        color = chartColor,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Icon(
-                                        imageVector = if (isPositive) Icons.Default.TrendingUp else Icons.Default.TrendingDown,
-                                        contentDescription = null,
-                                        tint = chartColor,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
+
+                                Spacer(modifier = Modifier.height(4.dp))
+
+                                Text(
+                                    text = "$${formatPrice(coin.current_price)}",
+                                    color = if (isDark) Color.White else Color.Black,
+                                    fontSize = 28.sp,
+                                    fontWeight = FontWeight.ExtraBold
+                                )
                             }
-
-                            Spacer(modifier = Modifier.height(4.dp))
-
-                            Text(
-                                text = "$${formatPrice(coin.current_price)}",
-                                color = if (isDark) Color.White else Color.Black,
-                                fontSize = 28.sp,
-                                fontWeight = FontWeight.ExtraBold
-                            )
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        if (isChartLoading) {
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator(color = chartColor.copy(alpha = 0.5f))
-                            }
-                        } else if (chartData.isNotEmpty()) {
-                            CoinChart(
-                                data = chartData,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .weight(1f),
-                                color = chartColor
-                            )
-                        } else if (!isLoading && errorMessage == null) {
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text("No chart data", color = Color.White.copy(alpha = 0.5f))
+                        Column(modifier = Modifier.padding(horizontal = 2.dp)) {
+                            if (isChartLoading) {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(color = chartColor.copy(alpha = 0.5f))
+                                }
+                            } else if (chartData.isNotEmpty()) {
+                                CoinChart(
+                                    data = chartData,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .weight(1f),
+                                    color = chartColor
+                                )
+                            } else if (!isLoading && errorMessage == null) {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("No chart data", color = Color.White.copy(alpha = 0.5f))
+                                }
                             }
                         }
                     }
@@ -307,8 +323,7 @@ fun WalletScreen(
                                 Text(
                                     text = if (isBalanceVisible) "$$userBalance" else "$ ****",
                                     modifier = Modifier.blur(if (isBalanceVisible) 0.dp else 4.dp),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp,
+                                    style = UIFont.ChatName,
                                     color = if (isDark) Color.White else Color.Black
                                 )
                             }
@@ -401,7 +416,10 @@ fun WalletScreen(
                                 .fillMaxSize()
                                 .graphicsLayer {
                                     // Stretch effect based on pull distance
-                                    val scale = 1f + (pullToRefreshState.distanceFraction * 0.1f).coerceAtMost(0.15f)
+                                    val scale =
+                                        1f + (pullToRefreshState.distanceFraction * 0.1f).coerceAtMost(
+                                            0.15f
+                                        )
                                     scaleY = scale
                                     transformOrigin = TransformOrigin(0.5f, 0f)
                                 },
@@ -431,7 +449,7 @@ private suspend fun refreshCoins(
         val response = client.get("https://api.coingecko.com/api/v3/coins/markets") {
             parameter("vs_currency", "usd")
             parameter("order", "market_cap_desc")
-            parameter("per_page", 50)
+            parameter("per_page", 12)
             parameter("page", 1)
             parameter("sparkline", "false")
             parameter("price_change_percentage", "24h")
@@ -495,10 +513,13 @@ fun CoinChart(
                 .pointerInput(data) {
                     detectDragGestures(
                         onDragStart = { offset ->
-                            selectedIndex = (offset.x / (size.width / (data.size - 1))).toInt().coerceIn(0, data.size - 1)
+                            selectedIndex = (offset.x / (size.width / (data.size - 1))).toInt()
+                                .coerceIn(0, data.size - 1)
                         },
                         onDrag = { change, _ ->
-                            selectedIndex = (change.position.x / (size.width / (data.size - 1))).toInt().coerceIn(0, data.size - 1)
+                            selectedIndex =
+                                (change.position.x / (size.width / (data.size - 1))).toInt()
+                                    .coerceIn(0, data.size - 1)
                         },
                         onDragEnd = { selectedIndex = null },
                         onDragCancel = { selectedIndex = null }
@@ -507,7 +528,8 @@ fun CoinChart(
                 .pointerInput(data) {
                     detectTapGestures(
                         onPress = { offset ->
-                            selectedIndex = (offset.x / (size.width / (data.size - 1))).toInt().coerceIn(0, data.size - 1)
+                            selectedIndex = (offset.x / (size.width / (data.size - 1))).toInt()
+                                .coerceIn(0, data.size - 1)
                             tryAwaitRelease()
                             selectedIndex = null
                         }
@@ -668,7 +690,9 @@ fun CoinListItem(
         },
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp).fillMaxWidth(),
+            modifier = Modifier
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Icon section
@@ -690,13 +714,12 @@ fun CoinListItem(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = coin.name,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
+                    style = UIFont.ChatName.copy(fontSize = 15.sp),
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = coin.symbol.uppercase(),
-                    fontSize = 9.sp,
+                    style = UIFont.Metadata.copy(fontSize = 10.sp),
                     color = Color.Gray
                 )
             }

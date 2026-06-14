@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.cyloop.font.UIFont
 import com.example.cyloop.theme.CyLoopTheme
 import com.example.cyloop.theme.getAppBackgroundBrush
 import kotlinx.coroutines.delay
@@ -96,8 +97,7 @@ fun FlowScreen(
             ) {
                 Text(
                     text = "Active Flows",
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.Bold,
+                    style = UIFont.LargeTitle.copy(
                         color = MaterialTheme.colorScheme.onBackground
                     )
                 )
@@ -113,7 +113,7 @@ fun FlowScreen(
                     )
                     Text(
                         text = "Sync Live",
-                        style = MaterialTheme.typography.bodyMedium.copy(
+                        style = UIFont.Metadata.copy(
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Medium
                         )

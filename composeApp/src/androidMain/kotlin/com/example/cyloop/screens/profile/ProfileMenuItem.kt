@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.cyloop.font.UIFont
 
 @Composable
 fun ProfileMenuItemModernSurface(
@@ -48,12 +49,7 @@ fun ProfileMenuItemModernSurface(
                 .size(42.dp)
                 .clip(CircleShape)
                 .background(
-                    Brush.linearGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
-                            MaterialTheme.colorScheme.secondary.copy(alpha = 0.8f)
-                        )
-                    )
+                    MaterialTheme.colorScheme.primary
                 ),
             contentAlignment = Alignment.Center
         ) {
@@ -61,7 +57,7 @@ fun ProfileMenuItemModernSurface(
                 imageVector = icon,
                 contentDescription = title,
                 modifier = Modifier.size(20.dp),
-                tint = Color.White
+                tint = Color.Black
             )
         }
 
@@ -73,14 +69,13 @@ fun ProfileMenuItemModernSurface(
         ) {
             Text(
                 text = title,
-                fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.SemiBold
+                style = UIFont.Body.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface
             )
             if (subtitle != null) {
                 Text(
                     text = subtitle,
-                    fontSize = 13.sp,
+                    style = UIFont.Metadata,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1
                 )
@@ -97,9 +92,8 @@ fun ProfileMenuItemModernSurface(
             ) {
                 Text(
                     text = if (badgeCount > 99) "99+" else badgeCount.toString(),
-                    fontSize = 11.sp,
+                    style = UIFont.Badge,
                     color = MaterialTheme.colorScheme.onPrimary,
-                    fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                 )
             }

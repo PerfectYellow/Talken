@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.cyloop.font.UIFont
 import com.example.cyloop.theme.CyLoopTheme
 
 @Composable
@@ -27,7 +28,7 @@ fun FlowCell(
     flowItem: PostItem,
     modifier: Modifier = Modifier,
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = true //isSystemInDarkTheme()
 
     fun getColorForPostId(postId: String): Color {
         val colors = listOf(
@@ -67,11 +68,8 @@ fun FlowCell(
             ),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isDark) {
+            containerColor =
                 MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-            } else {
-                Color.White
-            }
         ),
         border = BorderStroke(
             width = 1.dp,
@@ -103,8 +101,7 @@ fun FlowCell(
 
                 Text(
                     text = flowItem.author.username,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
+                    style = UIFont.ChatName.copy(
                         color = MaterialTheme.colorScheme.onSurface
                     ),
                     modifier = Modifier.weight(1f)
@@ -128,9 +125,8 @@ fun FlowCell(
                         )
                         Text(
                             text = if (flowItem.postId == "1") "34h left" else "12h left",
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                color = MaterialTheme.colorScheme.secondary,
-                                fontWeight = FontWeight.Medium
+                            style = UIFont.Badge.copy(
+                                color = MaterialTheme.colorScheme.secondary
                             )
                         )
                     }
@@ -140,8 +136,7 @@ fun FlowCell(
             // Content
             Text(
                 text = flowItem.content.text,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    lineHeight = 20.sp,
+                style = UIFont.ChatMessage.copy(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             )
@@ -154,7 +149,7 @@ fun FlowCell(
                 Text(
                     text = "PDA: ${flowItem.signature.take(3)}...${flowItem.signature.takeLast(4)}",
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.labelSmall.copy(
+                    style = UIFont.Metadata.copy(
                         color = MaterialTheme.colorScheme.primary,
                         fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
                     )
@@ -170,14 +165,14 @@ fun FlowCell(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "Backed: ",
-                        style = MaterialTheme.typography.bodyMedium.copy(
+                        style = UIFont.Body.copy(
                             color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.Bold
                         )
                     )
                     Text(
                         text = if (flowItem.postId == "1") "4.82 SOL" else "12.40 SOL",
-                        style = MaterialTheme.typography.bodyMedium.copy(
+                        style = UIFont.Body.copy(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     )
