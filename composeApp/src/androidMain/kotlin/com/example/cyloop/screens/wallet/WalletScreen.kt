@@ -34,62 +34,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.example.cyloop.api.Coin
+import com.example.cyloop.api.CoinGeckoService
 import com.example.cyloop.font.UIFont
 import com.example.cyloop.storage.AuthPreferences
 import com.example.cyloop.theme.getAppBackgroundBrush
 import com.example.cyloop.screens.main.TabBarView
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.engine.*
-import io.ktor.client.plugins.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.request.*
-import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.launch
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.SubcomposeAsyncImageContent
 import coil3.request.ImageRequest
 import coil3.request.crossfade
-
-@Serializable
-data class Coin(
-    val id: String,
-    val symbol: String,
-    val name: String,
-    val image: String,
-    val current_price: Double,
-    val price_change_percentage_24h: Double? = 0.0
-)
-
-@Serializable
-data class MarketChart(
-    val prices: List<List<Double>>
-)
-
-private val client = HttpClient {
-    install(ContentNegotiation) {
-        json(Json {
-            ignoreUnknownKeys = true
-            prettyPrint = true
-            isLenient = true
-        })
-    }
-
-    install(HttpTimeout) {
-        requestTimeoutMillis = 30000
-        connectTimeoutMillis = 15000
-        socketTimeoutMillis = 15000
-    }
-
-    defaultRequest {
-        header("Accept", "application/json")
-        header("User-Agent", "Ktor client")
-    }
-}
-
-private const val API_KEY = "CG-Z1ASMjuxEc3b5c5Z5Fyjvj3K"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -118,20 +73,17 @@ fun WalletScreen(
 
     LaunchedEffect(Unit) {
         if (isLoading) {
-            refreshCoins(
-                onSuccess = { result ->
-                    coins = result
-                    if (selectedCoin == null) {
-                        selectedCoin = result.firstOrNull()
-                    }
-                },
-                onError = { msg ->
-                    errorMessage = msg
-                },
-                onFinished = {
-                    isLoading = false
+            try {
+                val result = CoinGeckoService.getCoins()
+                coins = result
+                if (selectedCoin == null) {
+                    selectedCoin = result.firstOrNull()
                 }
-            )
+            } catch (e: Exception) {
+                errorMessage = "Failed to load market data: ${e.message}"
+            } finally {
+                isLoading = false
+            }
         }
     }
 
@@ -139,12 +91,7 @@ fun WalletScreen(
         selectedCoin?.let { coin ->
             isChartLoading = true
             try {
-                val response = client.get("https://api.coingecko.com/api/v3/coins/${coin.id}/market_chart") {
-                    parameter("vs_currency", "usd")
-                    parameter("days", "7")
-                    parameter("x_cg_demo_api_key", API_KEY)
-                }
-                val result = response.body<MarketChart>()
+                val result = CoinGeckoService.getMarketChart(coin.id)
                 if (result.prices.isNotEmpty()) {
                     chartData = result.prices.map { it[1] }
                 }
@@ -398,15 +345,13 @@ fun WalletScreen(
                         onRefresh = {
                             scope.launch {
                                 isRefreshing = true
-                                refreshCoins(
-                                    onSuccess = { result ->
-                                        coins = result
-                                    },
-                                    onError = { /* Keep existing data but maybe show a toast */ },
-                                    onFinished = {
-                                        isRefreshing = false
-                                    }
-                                )
+                                try {
+                                    coins = CoinGeckoService.getCoins()
+                                } catch (e: Exception) {
+                                    // Keep existing data
+                                } finally {
+                                    isRefreshing = false
+                                }
                             }
                         },
                         modifier = Modifier.fillMaxSize()
@@ -437,33 +382,6 @@ fun WalletScreen(
                 }
             }
         }
-    }
-}
-
-private suspend fun refreshCoins(
-    onSuccess: (List<Coin>) -> Unit,
-    onError: (String) -> Unit,
-    onFinished: () -> Unit
-) {
-    try {
-        val response = client.get("https://api.coingecko.com/api/v3/coins/markets") {
-            parameter("vs_currency", "usd")
-            parameter("order", "market_cap_desc")
-            parameter("per_page", 12)
-            parameter("page", 1)
-            parameter("sparkline", "false")
-            parameter("price_change_percentage", "24h")
-            parameter("x_cg_demo_api_key", API_KEY)
-        }
-        val result = response.body<List<Coin>>()
-        if (result.isNotEmpty()) {
-            onSuccess(result)
-        }
-    } catch (e: Exception) {
-        e.printStackTrace()
-        onError("Failed to load market data: ${e.message}")
-    } finally {
-        onFinished()
     }
 }
 
