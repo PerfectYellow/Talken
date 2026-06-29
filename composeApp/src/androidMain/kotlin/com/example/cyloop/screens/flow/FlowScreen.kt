@@ -10,16 +10,24 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.cyloop.api.SolanaAccountResponse
+import com.example.cyloop.api.SolanaService
+import com.example.cyloop.api.SolanaSignatureResponse
 import com.example.cyloop.font.UIFont
 import com.example.cyloop.theme.CyLoopTheme
 import com.example.cyloop.theme.getAppBackgroundBrush
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonPrimitive
 
 // Data Models
 data class PostItem(
@@ -43,7 +51,9 @@ data class Content(
 
 data class Stats(
     val likes: Int,
-    val comments: Int
+    val comments: Int,
+    val backedAmount: String,
+    val timeLeft: String
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,27 +64,32 @@ fun FlowScreen(
 ) {
     val scope = rememberCoroutineScope()
     var isRefreshing by remember { mutableStateOf(false) }
-    var isLoadingMore by remember { mutableStateOf(false) }
-    var feedItems by remember { mutableStateOf(getMockPosts()) }
+    var feedItems by remember { mutableStateOf<List<PostItem>>(emptyList()) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
     val listState = rememberLazyListState()
 
-    // Load more logic
-    val shouldLoadMore = remember {
-        derivedStateOf {
-            val lastVisibleItemIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            lastVisibleItemIndex >= feedItems.size - 1 && !isLoadingMore
+    val targetAddress = "CV1vESFrRPhXdZVtG7vcvitnmYgXBoxbzasb9po4UaC"
+
+    suspend fun fetchData() {
+        try {
+            errorMessage = null
+            val (accountResponse, sigResponse) = withContext(Dispatchers.IO) {
+                val acc = SolanaService.getAccountInfo(targetAddress)
+                val sig = SolanaService.getSignaturesForAddress(targetAddress)
+                acc to sig
+            }
+            val post = mapResponseToPost(accountResponse, sigResponse, targetAddress)
+            feedItems = listOf(post)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            errorMessage = e.message ?: "An unknown error occurred"
         }
     }
 
-    LaunchedEffect(shouldLoadMore.value) {
-        if (shouldLoadMore.value) {
-            isLoadingMore = true
-            // Simulate network delay
-            delay(2000)
-            val newItems = getMockPosts().map { it.copy(postId = it.postId + "_" + System.currentTimeMillis()) }
-            feedItems = feedItems + newItems
-            isLoadingMore = false
-        }
+    LaunchedEffect(Unit) {
+        isRefreshing = true
+        fetchData()
+        isRefreshing = false
     }
 
     Box(
@@ -126,37 +141,62 @@ fun FlowScreen(
                 onRefresh = {
                     scope.launch {
                         isRefreshing = true
-                        delay(1500) // Simulate refresh
-                        feedItems = getMockPosts()
+                        fetchData()
                         isRefreshing = false
                     }
                 },
                 modifier = Modifier.fillMaxSize()
             ) {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = bottomPadding + 20.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    items(feedItems, key = { it.postId }) { post ->
-                        FlowCell(flowItem = post)
-                    }
-
-                    if (isLoadingMore) {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(24.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(32.dp),
-                                    color = MaterialTheme.colorScheme.primary,
-                                    strokeWidth = 3.dp
-                                )
+                if (errorMessage != null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "Error Loading Flows",
+                                style = UIFont.ChatName.copy(color = MaterialTheme.colorScheme.error),
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = errorMessage!!,
+                                style = UIFont.Metadata.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(onClick = {
+                                scope.launch {
+                                    isRefreshing = true
+                                    fetchData()
+                                    isRefreshing = false
+                                }
+                            }) {
+                                Text("Retry")
                             }
+                        }
+                    }
+                } else if (feedItems.isEmpty() && !isRefreshing) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No active flows found",
+                            style = UIFont.Body.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = bottomPadding + 20.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        items(feedItems, key = { it.postId }) { post ->
+                            FlowCell(flowItem = post)
                         }
                     }
                 }
@@ -165,106 +205,69 @@ fun FlowScreen(
     }
 }
 
-fun getMockPosts(): List<PostItem> {
-    return listOf(
-        PostItem(
-            postId = "1",
-            signature = "FpZ...K9vB",
-            author = Author(
-                wallet = "sol_engineer_wallet",
-                username = "sol_engineer.sol",
-                avatar = null
-            ),
-            content = Content(
-                text = "Deploying Program Derived Address structures for expirable micro-leases. De-bloating Web3 storage feels massive!"
-            ),
-            stats = Stats(likes = 124, comments = 23),
-            createdAt = System.currentTimeMillis() - 3600000 // 1 hour ago
+fun mapResponseToPost(
+    response: SolanaAccountResponse,
+    sigResponse: SolanaSignatureResponse,
+    address: String
+): PostItem {
+    val result = response.result?.value ?: throw Exception("Account data not found")
+    val accountData = SolanaService.parseAccountData(result.data)
+    val info = accountData?.parsed?.info
+    
+    fun formatAddr(addr: String) = if (addr.length > 8) "${addr.take(4)}...${addr.takeLast(4)}" else addr
+
+    val rawContent = when (val d = info?.data) {
+        is JsonArray -> {
+            if (d.size > 0 && d[0] is JsonPrimitive) {
+                d[0].jsonPrimitive.content
+            } else {
+                d.toString()
+            }
+        }
+        is JsonPrimitive -> d.content
+        is JsonObject -> d.toString()
+        else -> "No data available"
+    }
+
+    // Truncate string to prevent Layout/Measure crashes with huge data
+    val safeContent = if (rawContent.length > 1000) rawContent.take(1000) + "..." else rawContent
+
+    val solAmount = result.lamports / 1_000_000_000.0
+    val formattedSol = if (solAmount % 1.0 == 0.0) {
+        String.format("%.0f SOL", solAmount)
+    } else {
+        String.format("%.2f SOL", solAmount)
+    }
+
+    // Calculate time from blockTime
+    val blockTime = sigResponse.result?.firstOrNull()?.blockTime
+    val timeLeftStr = if (blockTime != null) {
+        val currentTimeSec = System.currentTimeMillis() / 1000
+        val diff = currentTimeSec - blockTime
+        if (diff < 60) "${diff}s ago"
+        else if (diff < 3600) "${diff / 60}m ago"
+        else if (diff < 86400) "${diff / 3600}h ago"
+        else "${diff / 86400}d ago"
+    } else {
+        "unknown"
+    }
+
+    return PostItem(
+        postId = address,
+        signature = address,
+        author = Author(
+            wallet = result.owner,
+            username = formatAddr(result.owner),
+            avatar = null
         ),
-        PostItem(
-            postId = "2",
-            signature = "Xyz...77aP",
-            author = Author(
-                wallet = "nft_guru_wallet",
-                username = "nft_guru",
-                avatar = null
-            ),
-            content = Content(
-                text = "Solana microblogging model: PDA closes, original publisher recovers 100% rent-exemption lamports. Brilliant incentive structure."
-            ),
-            stats = Stats(likes = 89, comments = 12),
-            createdAt = System.currentTimeMillis() - 7200000 // 2 hours ago
+        content = Content(text = safeContent),
+        stats = Stats(
+            likes = 999,
+            comments = 123,
+            backedAmount = formattedSol,
+            timeLeft = timeLeftStr
         ),
-        PostItem(
-            postId = "3",
-            signature = "Mno...33qR",
-            author = Author(
-                wallet = "defi_dao_wallet",
-                username = "defi_dao.sol",
-                avatar = null
-            ),
-            content = Content(
-                text = "Just launched our new staking pool with 15% APY! LP tokens can now be used as collateral across 5 different protocols. 🚀"
-            ),
-            stats = Stats(likes = 342, comments = 56),
-            createdAt = System.currentTimeMillis() - 43200000 // 12 hours ago
-        ),
-        PostItem(
-            postId = "4",
-            signature = "Pqr...88mS",
-            author = Author(
-                wallet = "validator_whale",
-                username = "validator_whale",
-                avatar = null
-            ),
-            content = Content(
-                text = "Solana just hit 2000 TPS sustained for over an hour. Mainnet is more stable than ever. Validators are crushing it 💪"
-            ),
-            stats = Stats(likes = 567, comments = 89),
-            createdAt = System.currentTimeMillis() - 86400000 // 1 day ago
-        ),
-        PostItem(
-            postId = "5",
-            signature = "Stu...44nT",
-            author = Author(
-                wallet = "meme_coin_wallet",
-                username = "meme_coin_lord",
-                avatar = null
-            ),
-            content = Content(
-                text = "Airdrop incoming for BONK holders who've staked for 30+ days! Snapshot in 48 hours. Don't sleep on this one 🔥"
-            ),
-            stats = Stats(likes = 1234, comments = 245),
-            createdAt = System.currentTimeMillis() - 172800000 // 2 days ago
-        ),
-        PostItem(
-            postId = "6",
-            signature = "Vwx...11nU",
-            author = Author(
-                wallet = "nft_artist_wallet",
-                username = "digital_sol_art",
-                avatar = null
-            ),
-            content = Content(
-                text = "New generative art collection dropping on Thursday! 500 unique pieces, all metadata stored permanently on Arweave. Sneak peek in my profile 🎨"
-            ),
-            stats = Stats(likes = 456, comments = 78),
-            createdAt = System.currentTimeMillis() - 259200000 // 3 days ago
-        ),
-        PostItem(
-            postId = "7",
-            signature = "Yza...99nW",
-            author = Author(
-                wallet = "sol_dev_dao_wallet",
-                username = "solana_devs.sol",
-                avatar = null
-            ),
-            content = Content(
-                text = "Workshop tomorrow: 'Build Your First Solana Smart Contract in Rust' - Free for all DAO members. 500 participants already registered! 🦀"
-            ),
-            stats = Stats(likes = 789, comments = 145),
-            createdAt = System.currentTimeMillis() - 345600000 // 4 days ago
-        )
+        createdAt = (blockTime ?: (System.currentTimeMillis() / 1000)) * 1000
     )
 }
 

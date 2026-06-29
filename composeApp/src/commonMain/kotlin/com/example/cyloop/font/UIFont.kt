@@ -13,46 +13,38 @@ object UIFont {
     // Top Bar / Large Titles
     val LargeTitle = TextStyle(
         fontSize = 22.sp,
-        fontWeight = FontWeight.Bold,
-        fontFamily = TelegramFont,
-        letterSpacing = (-0.5).sp
+        fontWeight = FontWeight.Bold
     )
 
     // Chat List Name
     val ChatName = TextStyle(
         fontSize = 17.sp,
-        fontWeight = FontWeight.SemiBold,
-        fontFamily = TelegramFont,
-        letterSpacing = (-0.1).sp
+        fontWeight = FontWeight.SemiBold
     )
 
     // Chat List Last Message / Preview
     val ChatMessage = TextStyle(
         fontSize = 15.sp,
         fontWeight = FontWeight.Normal,
-        fontFamily = TelegramFont,
         lineHeight = 20.sp
     )
 
     // Secondary Info (Time, Unread Count, etc.)
     val Metadata = TextStyle(
         fontSize = 13.sp,
-        fontWeight = FontWeight.Normal,
-        fontFamily = TelegramFont
+        fontWeight = FontWeight.Normal
     )
 
     // Avatar Initials
     val AvatarLabel = TextStyle(
         fontSize = 20.sp,
-        fontWeight = FontWeight.Medium,
-        fontFamily = TelegramFont
+        fontWeight = FontWeight.Medium
     )
 
     // Small Labels / Badges
     val Badge = TextStyle(
         fontSize = 12.sp,
-        fontWeight = FontWeight.Bold,
-        fontFamily = TelegramFont
+        fontWeight = FontWeight.Bold
     )
 
     // Regular Body Text

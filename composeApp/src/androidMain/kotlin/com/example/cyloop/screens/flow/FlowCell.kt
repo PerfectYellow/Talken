@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -53,6 +54,7 @@ fun FlowCell(
     }
     
     Card(
+        onClick = { /* Handle tap if needed */ },
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -124,7 +126,7 @@ fun FlowCell(
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
-                            text = if (flowItem.postId == "1") "34h left" else "12h left",
+                            text = flowItem.stats.timeLeft,
                             style = UIFont.Badge.copy(
                                 color = MaterialTheme.colorScheme.secondary
                             )
@@ -138,7 +140,9 @@ fun FlowCell(
                 text = flowItem.content.text,
                 style = UIFont.ChatMessage.copy(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                ),
+                maxLines = 5,
+                overflow = TextOverflow.Ellipsis
             )
 
             // PDA Tag
@@ -147,11 +151,10 @@ fun FlowCell(
                 shape = RoundedCornerShape(8.dp)
             ) {
                 Text(
-                    text = "PDA: ${flowItem.signature.take(3)}...${flowItem.signature.takeLast(4)}",
+                    text = "PDA: ${if (flowItem.signature.length > 8) "${flowItem.signature.take(4)}...${flowItem.signature.takeLast(4)}" else flowItem.signature}",
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     style = UIFont.Metadata.copy(
-                        color = MaterialTheme.colorScheme.primary,
-                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                        color = MaterialTheme.colorScheme.primary
                     )
                 )
             }
@@ -171,7 +174,7 @@ fun FlowCell(
                         )
                     )
                     Text(
-                        text = if (flowItem.postId == "1") "4.82 SOL" else "12.40 SOL",
+                        text = flowItem.stats.backedAmount,
                         style = UIFont.Body.copy(
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -226,7 +229,12 @@ fun FlowCellPreview() {
                 content = Content(
                     text = "Workshop tomorrow: 'Build Your First Solana Smart Contract in Rust' - Free for all DAO members. 500 participants already registered! 🦀"
                 ),
-                stats = Stats(likes = 789, comments = 145),
+                stats = Stats(
+                    likes = 789,
+                    comments = 145,
+                    backedAmount = "12.40 SOL",
+                    timeLeft = "2d left"
+                ),
                 createdAt = System.currentTimeMillis() - 345600000 // 4 days ago
             )
         )
