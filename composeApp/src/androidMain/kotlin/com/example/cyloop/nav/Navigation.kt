@@ -15,10 +15,10 @@ sealed class Route {
     data object PasscodeLock : Route()
 
     @Serializable
-    data class ChatDetail(val chatId: String, val chatName: String) : Route()
+    data class ChatDetail(val chatId: String, val chatName: String, val imageUrl: String? = null, val nftAddress: String? = null) : Route()
 
     @Serializable
-    data class UserInfo(val chatName: String) : Route()
+    data class UserInfo(val chatName: String, val walletAddress: String? = null, val imageUrl: String? = null, val nftAddress: String? = null) : Route()
 
     @Serializable
     data object NewChat : Route()
@@ -34,17 +34,21 @@ sealed class Route {
 
     @Serializable
     data object NewTransactionRoute : Route()
+
+    @Serializable
+    data object BillMaker : Route()
 }
 
 fun Route.toNavString(): String = when (this) {
     is Route.Welcome -> "welcome"
     is Route.TabView -> "tab_view/${tab}"
     is Route.PasscodeLock -> "passcode_lock"
-    is Route.ChatDetail -> "chat_detail/${chatId}/${chatName}"
-    is Route.UserInfo -> "user_info/${chatName}"
+    is Route.ChatDetail -> "chat_detail/${chatId}/${chatName}?img=${imageUrl ?: ""}&nft=${nftAddress ?: ""}"
+    is Route.UserInfo -> "user_info/${chatName}?addr=${walletAddress ?: ""}&img=${imageUrl ?: ""}&nft=${nftAddress ?: ""}"
     is Route.NewChat -> "new_chat"
     is Route.Detail -> "detail"
     is Route.WalletDetail -> "wallet_detail"
     is Route.Payment -> "payment"
     is Route.NewTransactionRoute -> "new_transaction"
+    is Route.BillMaker -> "bill_maker"
 }

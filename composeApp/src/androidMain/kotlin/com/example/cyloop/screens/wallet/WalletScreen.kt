@@ -678,7 +678,7 @@ fun CoinImage(imageUrl: String) {
 
 @Preview(showBackground = true)
 @Composable
-fun PreviewTabBarView() {
+fun PreviewWalletScreenView() {
     MaterialTheme {
         WalletScreen({}, {})
     }

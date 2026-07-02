@@ -27,12 +27,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import com.example.cyloop.font.UIFont
+import com.example.cyloop.storage.ContactPreferences
 import com.example.cyloop.theme.getAppBackgroundBrush
 import cyloop.composeapp.generated.resources.Res
 import kotlinx.coroutines.delay
@@ -47,17 +50,39 @@ data class Chat(
     val time: Date,
     val unreadCount: Int,
     val avatarColor: Color,
+    val imageUrl: String? = null,
+    val nftAddress: String? = null
 )
 
 @Composable
 fun ChatScreen(
-    onChatClick: (String, String) -> Unit,
+    onChatClick: (String, String, String?, String?) -> Unit,
     onNewChatClick: () -> Unit,
     bottomPadding: androidx.compose.ui.unit.Dp = 0.dp
 ) {
+    val context = LocalContext.current
+    val contactPrefs = remember { ContactPreferences(context) }
+    val savedContacts by contactPrefs.savedContacts.collectAsState(initial = emptyList())
+
     // Sample data updated to match image
-    val chats = remember {
-        mutableStateListOf(
+    val chats = remember(savedContacts) {
+        val list = mutableStateListOf<Chat>()
+        
+        // Add saved contacts as chats
+        savedContacts.forEach { contact ->
+            list.add(Chat(
+                id = contact.ownerAddress,
+                name = contact.name,
+                lastMessage = "Start a new conversation",
+                time = Date(),
+                unreadCount = 0,
+                avatarColor = Color.Gray,
+                imageUrl = contact.imageUrl,
+                nftAddress = contact.nftAddress
+            ))
+        }
+
+        list.addAll(listOf(
             Chat(
                 id = "1",
                 name = "Alex Crypto",
@@ -81,104 +106,9 @@ fun ChatScreen(
                 time = Date(System.currentTimeMillis() - 86400000), // 1 day ago
                 unreadCount = 0,
                 avatarColor = Color(0xFF90A4AE), // Gray
-            ),
-            Chat(
-                id = "4",
-                name = "Sarah DeFi",
-                lastMessage = "LP rewards are ready to claim! 🎉",
-                time = Date(System.currentTimeMillis() - 43200000), // 12 hours ago
-                unreadCount = 3,
-                avatarColor = Color(0xFF81C784), // Green
-            ),
-            Chat(
-                id = "5",
-                name = "Web3 Collective",
-                lastMessage = "New proposal: Increase treasury allocation",
-                time = Date(System.currentTimeMillis() - 172800000), // 2 days ago
-                unreadCount = 12,
-                avatarColor = Color(0xFF64B5F6), // Blue
-            ),
-            Chat(
-                id = "6",
-                name = "James NFT",
-                lastMessage = "Your bid on 'Cosmic Ape #42' was accepted!",
-                time = Date(System.currentTimeMillis() - 21600000), // 6 hours ago
-                unreadCount = 0,
-                avatarColor = Color(0xFFFF8A65), // Coral
-            ),
-            Chat(
-                id = "7",
-                name = "Solana Stakers",
-                lastMessage = "Staking APY increased to 7.2%",
-                time = Date(System.currentTimeMillis() - 5400000), // 1.5 hours ago
-                unreadCount = 2,
-                avatarColor = Color(0xFFBA68C8), // Lavender
-            ),
-            Chat(
-                id = "8",
-                name = "Rachel (Merchant)",
-                lastMessage = "Payment received: 0.5 SOL for coffee ☕",
-                time = Date(System.currentTimeMillis() - 10800000), // 3 hours ago
-                unreadCount = 0,
-                avatarColor = Color(0xFFFFD54F), // Amber
-            ),
-            Chat(
-                id = "9",
-                name = "DAO Treasury Bot",
-                lastMessage = "Weekly report: +124 SOL in fees",
-                time = Date(System.currentTimeMillis() - 259200000), // 3 days ago
-                unreadCount = 0,
-                avatarColor = Color(0xFF4DB6AC), // Teal
-            ),
-            Chat(
-                id = "10",
-                name = "Chris (Support)",
-                lastMessage = "Ticket #5042 has been resolved ✅",
-                time = Date(System.currentTimeMillis() - 14400000), // 4 hours ago
-                unreadCount = 0,
-                avatarColor = Color(0xFFE57373), // Light Red
-            ),
-            Chat(
-                id = "11",
-                name = "Elena Web3",
-                lastMessage = "Thanks for the NFT! 🎨",
-                time = Date(System.currentTimeMillis() - 7200000), // 2 hours ago
-                unreadCount = 0,
-                avatarColor = Color(0xFF9575CD), // Deep Purple
-            ),
-            Chat(
-                id = "12",
-                name = "Validator Node",
-                lastMessage = "Your delegation rewards: 0.23 SOL",
-                time = Date(System.currentTimeMillis() - 21600000), // 6 hours ago
-                unreadCount = 0,
-                avatarColor = Color(0xFF4FC3F7), // Light Blue
-            ),
-            Chat(
-                id = "13",
-                name = "Metaverse Group",
-                lastMessage = "Land auction starts tomorrow at 3PM UTC",
-                time = Date(System.currentTimeMillis() - 3600000), // 1 hour ago
-                unreadCount = 5,
-                avatarColor = Color(0xFFFF8A80), // Light Red
-            ),
-            Chat(
-                id = "14",
-                name = "Staking Pool",
-                lastMessage = "New pool APY: 8.5% for SOL",
-                time = Date(System.currentTimeMillis() - 86400000), // 1 day ago
-                unreadCount = 0,
-                avatarColor = Color(0xFFAED581), // Light Green
-            ),
-            Chat(
-                id = "15",
-                name = "Dev DAO",
-                lastMessage = "Hackathon winners announced! 🏆",
-                time = Date(System.currentTimeMillis() - 129600000), // 1.5 days ago
-                unreadCount = 2,
-                avatarColor = Color(0xFFFFB74D), // Orange
             )
-        )
+        ))
+        list
     }
 
     var isRefreshing by remember { mutableStateOf(false) }
@@ -252,7 +182,7 @@ fun ChatScreen(
                     ) { chat ->
                         ChatCell(
                             chat = chat,
-                            onClick = { onChatClick(chat.id, chat.name) }
+                            onClick = { onChatClick(chat.id, chat.name, chat.imageUrl, chat.nftAddress) }
                         )
                     }
                 }
@@ -289,19 +219,30 @@ fun ChatCell(
                 .padding(horizontal = 20.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Avatar with letter
-            Box(
-                modifier = Modifier
-                    .size(52.dp)
-                    .clip(CircleShape)
-                    .background(chat.avatarColor),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = chat.name.take(1).uppercase(),
-                    style = UIFont.AvatarLabel,
-                    color = Color.White.copy(alpha = 0.9f)
+            // Avatar with letter or Image
+            if (chat.imageUrl != null) {
+                AsyncImage(
+                    model = chat.imageUrl,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop
                 )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(CircleShape)
+                        .background(chat.avatarColor),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = chat.name.take(1).uppercase(),
+                        style = UIFont.AvatarLabel,
+                        color = Color.White.copy(alpha = 0.9f)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -354,6 +295,6 @@ fun ChatCell(
 @Composable
 fun PreviewChatScreen() {
     MaterialTheme {
-        ChatScreen(onChatClick = { _, _ -> }, onNewChatClick = {})
+        ChatScreen(onChatClick = { _, _, _, _ -> }, onNewChatClick = {})
     }
 }

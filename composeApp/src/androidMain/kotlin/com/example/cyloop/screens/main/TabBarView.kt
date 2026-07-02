@@ -86,7 +86,7 @@ fun TabBarView(
     onTabSelected: (String) -> Unit,
     onSignOut: () -> Unit,
     onNavigateToPasscodeLock: () -> Unit,
-    onNavigateToChatDetail: (String, String) -> Unit,
+    onNavigateToChatDetail: (String, String, String?, String?) -> Unit,
     onNavigateToNewChat: () -> Unit,
     onNavigateToWalletDetail: () -> Unit = {},
     onNavigateToPayment: () -> Unit = {}
@@ -138,7 +138,9 @@ fun TabBarView(
                             bottomPadding = bottomBarHeight
                         )
                         BottomNavScreen.Chats -> ChatScreen(
-                            onChatClick = onNavigateToChatDetail,
+                            onChatClick = { id, name, imageUrl, nftAddress ->
+                                onNavigateToChatDetail(id, name, imageUrl, nftAddress)
+                            },
                             onNewChatClick = onNavigateToNewChat,
                             bottomPadding = bottomBarHeight
                         )
@@ -303,7 +305,7 @@ fun PreviewTabBarView() {
             onTabSelected = {},
             onSignOut = {}, 
             onNavigateToPasscodeLock = {},
-            onNavigateToChatDetail = { _, _ -> },
+            onNavigateToChatDetail = { _, _, _, _ -> },
             onNavigateToNewChat = {}
         )
     }

@@ -12,6 +12,7 @@ import com.example.cyloop.screens.chat.UserInfoScreen
 import com.example.cyloop.screens.wallet.WalletInfoView
 import com.example.cyloop.screens.wallet.PaymentInfoView
 import com.example.cyloop.screens.wallet.NewTransactionView
+import com.example.cyloop.screens.wallet.BillMakerView
 
 @Composable
 fun NavHost(
@@ -58,8 +59,8 @@ fun NavHost(
                     onNavigateToPasscodeLock = {
                         navController.navigate(Route.PasscodeLock)
                     },
-                    onNavigateToChatDetail = { id, name ->
-                        navController.navigate(Route.ChatDetail(id, name))
+                    onNavigateToChatDetail = { id, name, imageUrl, nftAddress ->
+                        navController.navigate(Route.ChatDetail(id, name, imageUrl, nftAddress))
                     },
                     onNavigateToNewChat = {
                         navController.navigate(Route.NewChat)
@@ -85,11 +86,13 @@ fun NavHost(
                 ChatDetailScreen(
                     chatId = route.chatId,
                     chatName = route.chatName,
+                    imageUrl = route.imageUrl,
+                    nftAddress = route.nftAddress,
                     onBackClick = {
                         navController.goBack()
                     },
                     onUserInfoClick = {
-                        navController.navigate(Route.UserInfo(route.chatName))
+                        navController.navigate(Route.UserInfo(route.chatName, route.chatId, route.imageUrl, route.nftAddress))
                     }
                 )
             }
@@ -97,6 +100,9 @@ fun NavHost(
             is Route.UserInfo -> {
                 UserInfoScreen(
                     chatName = route.chatName,
+                    walletAddress = route.walletAddress,
+                    imageUrl = route.imageUrl,
+                    nftAddress = route.nftAddress,
                     onBackClick = {
                         navController.goBack()
                     }
@@ -108,9 +114,9 @@ fun NavHost(
                     onBackClick = {
                         navController.goBack()
                     },
-                    onContactSelected = { id, name ->
+                    onContactSelected = { id, name, imageUrl, nftAddress ->
                         // Navigate to detail and pop the NewChat screen
-                        navController.navigate(Route.ChatDetail(id, name), popUpTo = Route.TabView())
+                        navController.navigate(Route.ChatDetail(id, name, imageUrl, nftAddress), popUpTo = Route.TabView())
                     }
                 )
             }
@@ -134,12 +140,23 @@ fun NavHost(
                     },
                     onNewTransactionClick = {
                         navController.navigate(Route.NewTransactionRoute)
+                    },
+                    onBillMakerClick = {
+                        navController.navigate(Route.BillMaker)
                     }
                 )
             }
 
             is Route.NewTransactionRoute -> {
                 NewTransactionView(
+                    onBackClick = {
+                        navController.goBack()
+                    }
+                )
+            }
+
+            is Route.BillMaker -> {
+                BillMakerView(
                     onBackClick = {
                         navController.goBack()
                     }

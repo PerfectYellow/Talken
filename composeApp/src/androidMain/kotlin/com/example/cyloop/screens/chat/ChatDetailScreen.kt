@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import com.example.cyloop.theme.getAppBackgroundBrush
 
 data class Message(
@@ -35,6 +36,8 @@ data class Message(
 fun ChatDetailScreen(
     chatId: String,
     chatName: String,
+    imageUrl: String?,
+    nftAddress: String?,
     onBackClick: () -> Unit,
     onUserInfoClick: () -> Unit
 ) {
@@ -59,18 +62,28 @@ fun ChatDetailScreen(
                             .padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = chatName.take(1).uppercase(),
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                fontWeight = FontWeight.Bold
+                        if (imageUrl != null) {
+                            AsyncImage(
+                                model = imageUrl,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
                             )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = chatName.take(1).uppercase(),
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
@@ -202,6 +215,6 @@ fun MessageBubble(message: Message) {
 @Composable
 fun PreviewChatDetailScreen() {
     MaterialTheme {
-        ChatDetailScreen("", "", {}, {})
+        ChatDetailScreen("", "", null, null, {}, {})
     }
 }

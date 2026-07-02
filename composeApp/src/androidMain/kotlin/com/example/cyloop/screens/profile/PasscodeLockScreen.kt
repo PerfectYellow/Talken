@@ -1,5 +1,6 @@
 package com.example.cyloop.screens.profile
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
@@ -9,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
@@ -385,7 +387,11 @@ fun PasscodeLockScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = Color(0xFFE8F5E9)//MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                            containerColor = MaterialTheme.colorScheme.surface
+                        ),
+                        border = BorderStroke(
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
                         ),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
@@ -394,35 +400,68 @@ fun PasscodeLockScreen(
                                 .fillMaxWidth()
                                 .padding(20.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
+                                modifier = Modifier.size(56.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Fingerprint,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(28.dp)
-                                )
+                                // Main Icon Background with Gradient
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(CircleShape)
+                                        .background(
+                                            Brush.verticalGradient(
+                                                colors = listOf(
+                                                    MaterialTheme.colorScheme.primary,
+                                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                                                )
+                                            )
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Fingerprint,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onPrimary,
+                                        modifier = Modifier.size(32.dp)
+                                    )
+                                }
+
+                                // Status Badge
+                                Surface(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .size(22.dp)
+                                        .offset(x = 2.dp, y = 2.dp),
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.surface)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(2.dp)
+                                    )
+                                }
                             }
 
                             Column(
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Text(
-                                    text = "Biometric Active",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.SemiBold,
+                                    text = "Biometric Login Active",
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary
                                 )
+                                Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = "Biometric authentication is currently active for logging in.",
+                                    text = "Your account is secured with biometric authentication",
                                     fontSize = 13.sp,
+                                    lineHeight = 18.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }

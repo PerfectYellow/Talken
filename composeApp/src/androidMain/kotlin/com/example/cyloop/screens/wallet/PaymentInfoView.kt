@@ -11,6 +11,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -47,7 +48,8 @@ val mockTransactions = listOf(
 @Composable
 fun PaymentInfoView(
     onBackClick: () -> Unit,
-    onNewTransactionClick: () -> Unit
+    onNewTransactionClick: () -> Unit,
+    onBillMakerClick: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -61,12 +63,27 @@ fun PaymentInfoView(
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = onNewTransactionClick,
-                icon = { Icon(Icons.Filled.Add, "New Transaction") },
-                text = { Text("New Transactions") },
-            )
-        }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                ExtendedFloatingActionButton(
+                    onClick = onBillMakerClick,
+                    icon = { Icon(Icons.Filled.Receipt, "Bill Maker") },
+                    text = { Text("Bill Maker") },
+                    modifier = Modifier.weight(1f)
+                )
+                ExtendedFloatingActionButton(
+                    onClick = onNewTransactionClick,
+                    icon = { Icon(Icons.Filled.Add, "New Transaction") },
+                    text = { Text("New Transaction") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        },
+        floatingActionButtonPosition = FabPosition.Center
     ) { padding ->
         Column(
             modifier = Modifier
@@ -178,6 +195,10 @@ fun TransactionItem(transaction: Transaction) {
 @Composable
 fun PreviewPaymentInfoView() {
     MaterialTheme {
-        PaymentInfoView(onBackClick = {}, onNewTransactionClick = {})
+        PaymentInfoView(
+            onBackClick = {},
+            onNewTransactionClick = {},
+            onBillMakerClick = {}
+        )
     }
 }

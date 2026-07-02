@@ -7,7 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -16,14 +16,28 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
+import com.example.cyloop.api.MagicEdenService
 import com.example.cyloop.theme.getAppBackgroundBrush
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserInfoScreen(
     chatName: String,
+    walletAddress: String?,
+    imageUrl: String?,
+    nftAddress: String?,
     onBackClick: () -> Unit
 ) {
+    var nftPrice by remember { mutableStateOf<Double?>(null) }
+
+    LaunchedEffect(nftAddress) {
+        if (nftAddress != null) {
+            val info = MagicEdenService.getTokenInfo(nftAddress)
+            nftPrice = info?.price
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -61,19 +75,29 @@ fun UserInfoScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             // Large Profile Image
-            Box(
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = chatName.take(1).uppercase(),
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    fontSize = 48.sp,
-                    fontWeight = FontWeight.Bold
+            if (imageUrl != null) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(CircleShape)
                 )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = chatName.take(1).uppercase(),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        fontSize = 48.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -95,11 +119,13 @@ fun UserInfoScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Additional Info sections (like Telegram)
-            InfoItem(label = "Wallet", value = "34xp4vRoCGJym3xR7yCVPFHoCNxv4Twseo")
-            InfoItem(label = "Mobile", value = "+1 234 567 8900")
+            InfoItem(label = "Wallet", value = walletAddress ?: "34xp4vRoCGJym3xR7yCVPFHoCNxv4Twseo")
+            InfoItem(label = "NFT Address", value = nftAddress ?: "Not specified")
+            if (nftAddress != null) {
+                val displayPrice = nftPrice ?: 0.0
+                InfoItem(label = "NFT Price", value = "${"%.2f".format(displayPrice)} SOL")
+            }
             InfoItem(label = "Username", value = "@${chatName.lowercase().replace(" ", "_")}")
-            InfoItem(label = "Bio", value = "Available")
         }
     }
 }
@@ -132,6 +158,6 @@ fun InfoItem(label: String, value: String) {
 @Composable
 fun PreviewUserInfoScreen() {
     MaterialTheme {
-        UserInfoScreen("Alice Johnson", {})
+        UserInfoScreen("Alice Johnson", null, null, null, {})
     }
 }

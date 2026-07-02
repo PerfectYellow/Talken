@@ -82,6 +82,20 @@ data class SolanaSignatureInfo(
     val confirmationStatus: String? = null
 )
 
+@Serializable
+data class SolanaBalanceResponse(
+    val jsonrpc: String,
+    val result: BalanceResult? = null,
+    val error: SolanaRpcError? = null,
+    val id: Int
+)
+
+@Serializable
+data class BalanceResult(
+    val context: SolanaContext,
+    val value: Long
+)
+
 object SolanaService {
     private val json = Json {
         ignoreUnknownKeys = true
@@ -96,7 +110,33 @@ object SolanaService {
         }
     }
 
+    private const val MAINNET_URL = "https://api.mainnet-beta.solana.com"
     private const val DEVNET_URL = "https://api.devnet.solana.com"
+
+    suspend fun getBalance(address: String): Long {
+        val payload = buildJsonObject {
+            put("jsonrpc", "2.0")
+            put("id", 1)
+            put("method", "getBalance")
+            put("params", buildJsonArray {
+                add(address)
+            })
+        }
+
+        val response = client.post(MAINNET_URL) {
+            header(HttpHeaders.ContentType, "application/json")
+            setBody(payload.toString())
+        }
+
+        val responseText = response.bodyAsText()
+        val responseObj = json.decodeFromString<SolanaBalanceResponse>(responseText)
+        
+        if (responseObj.error != null) {
+            throw Exception(responseObj.error.message)
+        }
+        
+        return responseObj.result?.value ?: 0L
+    }
 
     suspend fun getAccountInfo(address: String): SolanaAccountResponse {
         val payload = buildJsonObject {
