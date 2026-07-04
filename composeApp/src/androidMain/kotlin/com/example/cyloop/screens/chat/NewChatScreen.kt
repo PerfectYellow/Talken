@@ -6,7 +6,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.ArrowBack
@@ -15,6 +17,8 @@ import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -233,127 +237,145 @@ fun AddContactSheet(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scrollState = rememberScrollState()
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .padding(24.dp)
                 .fillMaxWidth()
                 .animateContentSize()
-                .then(if (assetResult != null) Modifier.fillMaxHeight(0.95f) else Modifier)
+                .then(if (assetResult != null) Modifier.fillMaxHeight(0.8f) else Modifier)
                 .navigationBarsPadding()
-                .padding(bottom = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text("Add New Contact", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-
-            OutlinedTextField(
-                value = nftAddress,
-                onValueChange = { 
-                    nftAddress = it
-                    if (it.isBlank()) {
-                        assetResult = null
-                        nftPrice = null
-                        walletBalance = null
-                        errorMessage = null
-                    }
-                },
-                label = { Text("NFT Address") },
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text("Add New Contact", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
 
-            if (assetResult == null && !isLoading) {
-                Button(
-                    onClick = {
-                        scope.launch {
-                            isLoading = true
-                            errorMessage = null
-                            try {
-                                val result = HeliusService.getAsset(nftAddress)
-                                if (savedContacts.any { it.nftAddress == result.id }) {
-                                    errorMessage = "This contact is already in your list."
-                                } else {
-                                    assetResult = result
-                                    // Fetch price from Magic Eden
-                                    val priceInfo = MagicEdenService.getTokenInfo(result.id)
-                                    nftPrice = priceInfo?.price ?: 0.0
-                                    
-                                    // Fetch wallet balance
-                                    walletBalance = SolanaService.getBalance(result.ownership.owner)
+                assetResult?.let { result ->
+                    AsyncImage(
+                        model = result.content.links?.image,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(160.dp)
+                            .clip(MaterialTheme.shapes.large)
+                            .background(Color.LightGray)
+                    )
+                }
+
+                Column(
+                    modifier = Modifier
+                        .then(if (assetResult != null) Modifier.weight(1f) else Modifier)
+                        .verticalScroll(scrollState)
+                        .padding(bottom = if (assetResult != null) 72.dp else 0.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    OutlinedTextField(
+                        value = nftAddress,
+                        onValueChange = { 
+                            nftAddress = it
+                            if (it.isBlank()) {
+                                assetResult = null
+                                nftPrice = null
+                                walletBalance = null
+                                errorMessage = null
+                            }
+                        },
+                        label = { Text("NFT Address") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+
+                    if (assetResult == null && !isLoading) {
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    isLoading = true
+                                    errorMessage = null
+                                    try {
+                                        val result = HeliusService.getAsset(nftAddress)
+                                        if (savedContacts.any { it.nftAddress == result.id }) {
+                                            errorMessage = "This contact is already in your list."
+                                        } else {
+                                            assetResult = result
+                                            // Fetch price from Magic Eden
+                                            val priceInfo = MagicEdenService.getTokenInfo(result.id)
+                                            nftPrice = priceInfo?.price ?: 0.0
+                                            
+                                            // Fetch wallet balance
+                                            walletBalance = SolanaService.getBalance(result.ownership.owner)
+                                        }
+                                    } catch (e: Exception) {
+                                        errorMessage = e.message
+                                    } finally {
+                                        isLoading = false
+                                    }
                                 }
-                            } catch (e: Exception) {
-                                errorMessage = e.message
-                            } finally {
-                                isLoading = false
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = nftAddress.isNotBlank()
+                        ) {
+                            Text("Search")
+                        }
+                    }
+
+                    if (isLoading) {
+                        CircularProgressIndicator()
+                    }
+
+                    errorMessage?.let {
+                        Text(it, color = MaterialTheme.colorScheme.error, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    }
+
+                    assetResult?.let { result ->
+                        Text(result.content.metadata.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                DetailItem(label = "Owner Wallet", value = result.ownership.owner)
+                                HorizontalDivider()
+
+                                Text("NFT Price", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.secondary)
+                                Text(
+                                    text = "${"%.2f".format(nftPrice ?: 0.0)} SOL",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.ExtraBold
+                                )
+                                HorizontalDivider()
+
+                                Text("Wallet Balance", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.secondary)
+                                Text(
+                                    text = if (walletBalance != null) "${"%.4f".format(walletBalance!! / 1_000_000_000.0)} SOL" else "0.0000 SOL",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.ExtraBold
+                                )
                             }
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = nftAddress.isNotBlank()
-                ) {
-                    Text("Search")
+                    }
                 }
-            }
-
-            if (isLoading) {
-                CircularProgressIndicator()
-            }
-
-            errorMessage?.let {
-                Text(it, color = MaterialTheme.colorScheme.error, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             }
 
             assetResult?.let { result ->
-                AsyncImage(
-                    model = result.content.links?.image,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(160.dp)
-                        .clip(MaterialTheme.shapes.large)
-                        .background(Color.LightGray)
-                )
-                
-                Text(result.content.metadata.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                ) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        DetailItem(label = "Owner Wallet", value = result.ownership.owner)
-                        HorizontalDivider()
-
-                        Text("NFT Price", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.secondary)
-                        Text(
-                            text = "${"%.2f".format(nftPrice ?: 0.0)} SOL",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                        HorizontalDivider()
-
-                        Text("Wallet Balance", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.secondary)
-                        Text(
-                            text = if (walletBalance != null) "${"%.4f".format(walletBalance!! / 1_000_000_000.0)} SOL" else "0.0000 SOL",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.weight(1f))
-
                 Button(
                     onClick = {
                         onSave(result)
                     },
-                    modifier = Modifier.fillMaxWidth().height(56.dp)
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .height(56.dp)
                 ) {
                     Text("Save Contact", style = MaterialTheme.typography.titleMedium)
                 }
@@ -373,12 +395,13 @@ fun ContactDetailSheet(
     var nftPrice by remember { mutableStateOf<Double?>(null) }
     var isLoadingBalance by remember { mutableStateOf(true) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scrollState = rememberScrollState()
 
     LaunchedEffect(contact.ownerAddress, contact.nftAddress) {
         try {
             // Fetch balance
             balance = SolanaService.getBalance(contact.ownerAddress)
-            
+
             // Fetch NFT Price
             val priceInfo = MagicEdenService.getTokenInfo(contact.nftAddress)
             nftPrice = priceInfo?.price ?: 0.0
@@ -394,64 +417,74 @@ fun ContactDetailSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .padding(24.dp)
                 .fillMaxWidth()
-                .fillMaxHeight(0.95f)
-                .navigationBarsPadding(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+                .fillMaxHeight(0.8f) // Keeps it stable at a high height
+                .animateContentSize() // Smooths out height changes from loading
+                .navigationBarsPadding()
         ) {
-            AsyncImage(
-                model = contact.imageUrl,
-                contentDescription = null,
+            Column(
                 modifier = Modifier
-                    .size(200.dp)
-                    .clip(MaterialTheme.shapes.extraLarge)
-                    .background(Color.LightGray)
-            )
-
-            Text(contact.name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    .fillMaxWidth()
+                    .verticalScroll(scrollState)
+                    .padding(bottom = 76.dp), // Space for the floating button
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    DetailItem(label = "NFT Address", value = contact.nftAddress)
-                    HorizontalDivider()
-                    DetailItem(label = "Owner Wallet", value = contact.ownerAddress)
-                    HorizontalDivider()
+                AsyncImage(
+                    model = contact.imageUrl,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(200.dp)
+                        .clip(MaterialTheme.shapes.extraLarge)
+                        .background(Color.LightGray)
+                )
 
-                    Text("NFT Price", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.secondary)
-                    Text(
-                        text = "${"%.2f".format(nftPrice ?: 0.0)} SOL",
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.ExtraBold
-                    )
-                    HorizontalDivider()
-                    
-                    Text("Wallet Balance", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.secondary)
-                    if (isLoadingBalance) {
-                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                    } else {
+                Text(contact.name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        DetailItem(label = "NFT Address", value = contact.nftAddress)
+                        HorizontalDivider()
+                        DetailItem(label = "Owner Wallet", value = contact.ownerAddress)
+                        HorizontalDivider()
+
+                        Text("NFT Price", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.secondary)
                         Text(
-                            text = if (balance != null) "${"%.4f".format(balance!! / 1_000_000_000.0)} SOL" else "Error loading balance",
+                            text = "${"%.2f".format(nftPrice ?: 0.0)} SOL",
                             style = MaterialTheme.typography.headlineSmall,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.ExtraBold
                         )
+                        HorizontalDivider()
+
+                        Text("Wallet Balance", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.secondary)
+                        if (isLoadingBalance) {
+                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                        } else {
+                            Text(
+                                text = if (balance != null) "${"%.4f".format(balance!! / 1_000_000_000.0)} SOL" else "Error loading balance",
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                        }
                     }
                 }
             }
-            
-            Spacer(modifier = Modifier.weight(1f))
 
+            // Floating Overlay Button
             Button(
-                onClick = onStartChat, 
-                modifier = Modifier.fillMaxWidth().height(56.dp),
+                onClick = onStartChat,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(56.dp),
                 shape = MaterialTheme.shapes.medium
             ) {
                 Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null)

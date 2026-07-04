@@ -110,16 +110,9 @@ fun UserInfoScreen(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            // Status
-            Text(
-                text = "online",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
             Spacer(modifier = Modifier.height(32.dp))
 
-            InfoItem(label = "Wallet", value = walletAddress ?: "34xp4vRoCGJym3xR7yCVPFHoCNxv4Twseo")
+            InfoItem(label = "Wallet", value = "${walletAddress?.take(4)}...${walletAddress?.takeLast(4)}" ?: "Not specified")
             InfoItem(label = "NFT Address", value = nftAddress ?: "Not specified")
             if (nftAddress != null) {
                 val displayPrice = nftPrice ?: 0.0
