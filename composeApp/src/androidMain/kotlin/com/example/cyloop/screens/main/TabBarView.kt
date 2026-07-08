@@ -88,6 +88,7 @@ fun TabBarView(
     onNavigateToPasscodeLock: () -> Unit,
     onNavigateToChatDetail: (String, String, String?, String?) -> Unit,
     onNavigateToNewChat: () -> Unit,
+    onNavigateToUploadContent: () -> Unit = {},
     onNavigateToWalletDetail: () -> Unit = {},
     onNavigateToPayment: () -> Unit = {}
 ) {
@@ -127,6 +128,7 @@ fun TabBarView(
                             onCopyAddressClick = {},
                             onExportWalletClick = {},
                             onPasscodeLockClick = onNavigateToPasscodeLock,
+                            onUploadContentClick = onNavigateToUploadContent,
                             bottomPadding = bottomBarHeight
                         )
                         BottomNavScreen.Wallet -> WalletScreen(

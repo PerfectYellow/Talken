@@ -13,6 +13,7 @@ import com.example.cyloop.screens.wallet.WalletInfoView
 import com.example.cyloop.screens.wallet.PaymentInfoView
 import com.example.cyloop.screens.wallet.NewTransactionView
 import com.example.cyloop.screens.wallet.BillMakerView
+import com.example.cyloop.screens.upload.UploadContentScreen
 
 @Composable
 fun NavHost(
@@ -64,6 +65,9 @@ fun NavHost(
                     },
                     onNavigateToNewChat = {
                         navController.navigate(Route.NewChat)
+                    },
+                    onNavigateToUploadContent = {
+                        navController.navigate(Route.UploadContent)
                     },
                     onNavigateToWalletDetail = {
                         navController.navigate(Route.WalletDetail)
@@ -157,6 +161,14 @@ fun NavHost(
 
             is Route.BillMaker -> {
                 BillMakerView(
+                    onBackClick = {
+                        navController.goBack()
+                    }
+                )
+            }
+
+            is Route.UploadContent -> {
+                UploadContentScreen(
                     onBackClick = {
                         navController.goBack()
                     }

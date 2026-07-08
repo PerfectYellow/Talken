@@ -37,6 +37,9 @@ sealed class Route {
 
     @Serializable
     data object BillMaker : Route()
+
+    @Serializable
+    data object UploadContent : Route()
 }
 
 fun Route.toNavString(): String = when (this) {
@@ -51,4 +54,5 @@ fun Route.toNavString(): String = when (this) {
     is Route.Payment -> "payment"
     is Route.NewTransactionRoute -> "new_transaction"
     is Route.BillMaker -> "bill_maker"
+    is Route.UploadContent -> "upload_content"
 }

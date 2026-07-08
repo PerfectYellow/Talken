@@ -11,9 +11,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.cyloop.api.SolanaAccountResponse
 import com.example.cyloop.api.SolanaService
@@ -67,6 +71,7 @@ fun FlowScreen(
     var feedItems by remember { mutableStateOf<List<PostItem>>(emptyList()) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val listState = rememberLazyListState()
+    var messageText by remember { mutableStateOf("") }
 
     val targetAddress = "CV1vESFrRPhXdZVtG7vcvitnmYgXBoxbzasb9po4UaC"
 
@@ -145,7 +150,7 @@ fun FlowScreen(
                         isRefreshing = false
                     }
                 },
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.weight(1f)
             ) {
                 if (errorMessage != null) {
                     Box(
@@ -192,12 +197,69 @@ fun FlowScreen(
                     LazyColumn(
                         state = listState,
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = bottomPadding + 20.dp),
+                        contentPadding = PaddingValues(bottom = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         items(feedItems, key = { it.postId }) { post ->
                             FlowCell(flowItem = post)
                         }
+                    }
+                }
+            }
+
+            // Message Input
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                color = Color.Transparent
+            ) {
+                Row(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .padding(top = 8.dp, bottom = 10.dp)
+                        .padding(bottom = bottomPadding - 28.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TextField(
+                        value = messageText,
+                        onValueChange = { messageText = it },
+                        modifier = Modifier.weight(1f),
+                        placeholder = {
+                            Text(
+                                "Type a message...",
+                                style = UIFont.Body.copy(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
+                            )
+                        },
+                        textStyle = UIFont.Body.copy(color = MaterialTheme.colorScheme.onSurface),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            cursorColor = MaterialTheme.colorScheme.primary
+                        ),
+                        shape = RoundedCornerShape(24.dp),
+                        maxLines = 4
+                    )
+
+                    IconButton(
+                        onClick = {
+                            if (messageText.isNotBlank()) {
+                                // TODO: Handle message sending logic
+                                messageText = ""
+                            }
+                        },
+                        enabled = messageText.isNotBlank(),
+                        colors = IconButtonDefaults.iconButtonColors(
+                            contentColor = MaterialTheme.colorScheme.primary,
+                            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Send,
+                            contentDescription = "Send"
+                        )
                     }
                 }
             }

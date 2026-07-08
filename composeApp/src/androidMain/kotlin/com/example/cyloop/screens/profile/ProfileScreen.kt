@@ -16,6 +16,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Publish
 import androidx.compose.material3.HorizontalDivider
@@ -35,6 +36,7 @@ fun ProfileScreen(
     walletAddress: String = "9xQq...3fGt",
     qrCodeBitmap: Any? = null,
     onPasscodeLockClick: () -> Unit,
+    onUploadContentClick: () -> Unit,
     onManageLogsClick: () -> Unit,
     onExportWalletClick: () -> Unit,
     onLogoutClick: () -> Unit,
@@ -97,6 +99,18 @@ fun ProfileScreen(
                     )
 
                     ProfileMenuItemModernSurface(
+                        icon = Icons.Default.CloudUpload,
+                        title = "Upload Content",
+                        onClick = onUploadContentClick
+                    )
+
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 24.dp),
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+                    )
+
+                    ProfileMenuItemModernSurface(
                         icon = Icons.AutoMirrored.Filled.List,
                         title = "Manage Logs",
                         onClick = onManageLogsClick
@@ -137,6 +151,7 @@ fun PreviewProfileScreen() {
     MaterialTheme {
         ProfileScreen(
             onPasscodeLockClick = {},
+            onUploadContentClick = {},
             onManageLogsClick = {},
             onExportWalletClick = {},
             onLogoutClick = {},
