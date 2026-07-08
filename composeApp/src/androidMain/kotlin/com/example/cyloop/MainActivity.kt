@@ -22,6 +22,9 @@ import com.example.cyloop.nav.rememberNavController
 import androidx.fragment.app.FragmentActivity
 import com.example.cyloop.nav.NavHost
 import com.example.cyloop.nav.Route
+import com.example.cyloop.storage.AuthPreferences
+import com.example.cyloop.storage.ContactPreferences
+import com.example.cyloop.storage.createDataStore
 
 class MainActivity : FragmentActivity() {
     private var backPressedTime: Long = 0
@@ -34,6 +37,10 @@ class MainActivity : FragmentActivity() {
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
         )
         super.onCreate(savedInstanceState)
+        
+        // Initialize Preferences
+        AuthPreferences.init(createDataStore(this, "auth_prefs"))
+        ContactPreferences.init(createDataStore(this, "contact_prefs"))
 
         setContent {
             CyLoopTheme(darkTheme = true) {
@@ -75,7 +82,7 @@ class MainActivity : FragmentActivity() {
                     // First tap - show toast and update timestamp
                     backPressedTime = currentTime
                     Toast.makeText(
-                        this,
+                        this@MainActivity,
                         "Press back again to exit",
                         Toast.LENGTH_SHORT
                     ).show()

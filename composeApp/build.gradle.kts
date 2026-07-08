@@ -30,16 +30,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
-
-            implementation("androidx.datastore:datastore-preferences:1.1.1")
-
-            implementation("org.jetbrains.compose.material:material-icons-extended:1.7.3")
-
-            implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.7")
-            implementation("androidx.biometric:biometric:1.4.0-alpha02")
-
-            implementation("io.coil-kt.coil3:coil-compose:3.4.0")
-            implementation("io.coil-kt.coil3:coil-network-ktor3:3.4.0")
+            implementation("androidx.fragment:fragment-ktx:1.8.6")
 
             implementation(libs.ktor.client.android)
 
@@ -55,6 +46,19 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+            
+            implementation("org.jetbrains.compose.material:material-icons-extended:1.7.3")
+
+            implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.7")
+
+            implementation("androidx.datastore:datastore-preferences:1.2.1")
+            implementation("androidx.datastore:datastore:1.2.1")
+            implementation("com.squareup.okio:okio:3.9.0")
+            
+            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
+            
+            implementation("io.coil-kt.coil3:coil-compose:3.0.0-rc01")
+            implementation("io.coil-kt.coil3:coil-network-ktor3:3.0.0-rc01")
 
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
