@@ -24,6 +24,7 @@ import com.example.cyloop.nav.NavHost
 import com.example.cyloop.nav.Route
 import com.example.cyloop.storage.AuthPreferences
 import com.example.cyloop.storage.ContactPreferences
+import com.example.cyloop.storage.IpfsPreferences
 import com.example.cyloop.storage.createDataStore
 
 class MainActivity : FragmentActivity() {
@@ -41,6 +42,7 @@ class MainActivity : FragmentActivity() {
         // Initialize Preferences
         AuthPreferences.init(createDataStore(this, "auth_prefs"))
         ContactPreferences.init(createDataStore(this, "contact_prefs"))
+        IpfsPreferences.init(createDataStore(this, "ipfs_prefs"))
 
         setContent {
             CyLoopTheme(darkTheme = true) {
