@@ -10,11 +10,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AttachFile
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.SentimentSatisfied
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -226,7 +224,7 @@ fun ChatDetailScreen(
                         elevation = FloatingActionButtonDefaults.elevation(2.dp, 4.dp)
                     ) {
                         Icon(
-                            imageVector = if (messageText.isEmpty()) Icons.Default.Receipt else Icons.AutoMirrored.Filled.Send,
+                            imageVector = if (messageText.isEmpty()) Icons.AutoMirrored.Filled.ReceiptLong else Icons.AutoMirrored.Filled.Send,
                             contentDescription = if (messageText.isEmpty()) "Voice" else "Send",
                             modifier = Modifier.size(24.dp)
                         )
