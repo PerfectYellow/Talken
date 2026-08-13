@@ -349,7 +349,8 @@ fun PasscodeLockScreen(
                                     onClick = {
                                         if (password.isNotEmpty()) {
                                             scope.launch {
-                                                val storedPassword = SecureStorage.getPassword()
+                                                val secureStorage = SecureStorage()
+                                                val storedPassword = secureStorage.getPassword()
                                                 if (storedPassword == null) {
                                                     passwordError = "No password exists. Please set a password first."
                                                 } else if (password != storedPassword) {
@@ -532,7 +533,8 @@ fun PasscodeLockScreen(
                     onClick = {
                         if (resetPassword.isNotBlank() && resetPassword == confirmResetPassword) {
                             scope.launch {
-                                SecureStorage.setPassword(resetPassword)
+                                val secureStorage = SecureStorage()
+                                secureStorage.savePassword(resetPassword)
                                 password = resetPassword
                                 showResetDialog = false
                                 resetPassword = ""

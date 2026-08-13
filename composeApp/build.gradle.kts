@@ -33,10 +33,10 @@ kotlin {
             implementation("androidx.fragment:fragment-ktx:1.8.6")
 
             implementation(libs.ktor.client.android)
-
-//            implementation(libs.koin.androidx.compose)
-//            implementation(libs.koin.android)
+            implementation("androidx.security:security-crypto-ktx:1.1.0-alpha06")
+            implementation("androidx.biometric:biometric-ktx:1.2.0-alpha05")
         }
+        
         commonMain.dependencies {
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
@@ -49,6 +49,7 @@ kotlin {
             
             implementation(libs.filekit.compose)
             implementation(libs.filekit.core)
+            implementation(libs.krypto)
             implementation("org.jetbrains.compose.material:material-icons-extended:1.7.3")
 
             implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.7")
@@ -107,4 +108,3 @@ android {
 dependencies {
     debugImplementation(libs.compose.uiTooling)
 }
-

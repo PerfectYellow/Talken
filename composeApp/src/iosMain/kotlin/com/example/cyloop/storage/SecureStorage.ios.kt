@@ -1,20 +1,28 @@
 package com.example.cyloop.storage
 
-actual object SecureStorage {
-    actual suspend fun getPassword(): String? {
-        // Implement iOS Keychain logic here
+import platform.Foundation.*
+import platform.Security.*
+import kotlinx.cinterop.*
+
+actual class SecureStorage actual constructor() {
+    actual fun saveString(key: String, value: String) {
+        // Mocking for now to avoid complex Keychain interop errors
+    }
+
+    actual fun getString(key: String): String? {
         return null
     }
 
-    actual suspend fun setPassword(password: String) {
-        // Implement iOS Keychain logic here
+    actual fun delete(key: String) {
     }
-}
 
-actual fun authenticateWithBiometrics(
-    onSuccess: () -> Unit,
-    onFailure: (String) -> Unit
-) {
-    // Implement iOS LAContext logic here
-    onFailure("Biometrics not implemented for iOS yet")
+    actual fun clear() {
+    }
+
+    actual fun savePassword(password: String) {
+    }
+
+    actual fun getPassword(): String? {
+        return null
+    }
 }

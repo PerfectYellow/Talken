@@ -1,27 +1,43 @@
 package com.example.cyloop.storage
 
-import android.content.Context
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import com.example.cyloop.CyLoopApp
 
-actual object SecureStorage {
-    private val prefs by lazy {
-        CyLoopApp.instance.getSharedPreferences("secure_prefs", Context.MODE_PRIVATE)
+actual class SecureStorage actual constructor() {
+    private val masterKey = MasterKey.Builder(CyLoopApp.instance)
+        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+        .build()
+    
+    private val sharedPreferences = EncryptedSharedPreferences.create(
+        CyLoopApp.instance,
+        "secure_prefs",
+        masterKey,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+    )
+
+    actual fun saveString(key: String, value: String) {
+        sharedPreferences.edit().putString(key, value).apply()
     }
 
-    actual suspend fun getPassword(): String? {
-        return prefs.getString("user_password", null)
+    actual fun getString(key: String): String? {
+        return sharedPreferences.getString(key, null)
     }
 
-    actual suspend fun setPassword(password: String) {
-        prefs.edit().putString("user_password", password).apply()
+    actual fun delete(key: String) {
+        sharedPreferences.edit().remove(key).apply()
     }
-}
 
-actual fun authenticateWithBiometrics(
-    onSuccess: () -> Unit,
-    onFailure: (String) -> Unit
-) {
-    // This needs an Activity. We might need a better way to handle this.
-    // For now, we'll just call onFailure or implement a way to get the current activity.
-    onFailure("Biometrics not implemented yet for Android in commonMain")
+    actual fun clear() {
+        sharedPreferences.edit().clear().apply()
+    }
+
+    actual fun savePassword(password: String) {
+        saveString("app_password", password)
+    }
+
+    actual fun getPassword(): String? {
+        return getString("app_password")
+    }
 }

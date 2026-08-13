@@ -28,6 +28,11 @@ import com.example.cyloop.storage.IpfsPreferences
 import com.example.cyloop.storage.createDataStore
 
 class MainActivity : FragmentActivity() {
+    companion object {
+        var currentActivity: MainActivity? = null
+            private set
+    }
+
     private var backPressedTime: Long = 0
     private val BACK_PRESS_INTERVAL = 2000 // 2 seconds
     private lateinit var navControllerRef: com.example.cyloop.nav.NavController
@@ -38,6 +43,7 @@ class MainActivity : FragmentActivity() {
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
         )
         super.onCreate(savedInstanceState)
+        currentActivity = this
         
         // Initialize Preferences
         AuthPreferences.init(createDataStore(this, "auth_prefs"))
@@ -70,6 +76,11 @@ class MainActivity : FragmentActivity() {
     @Suppress("MissingSuperCall", "GestureBackNavigation")
     override fun onBackPressed() {
         handleBackNavigation(navControllerRef)
+    }
+
+    override fun onDestroy() {
+        if (currentActivity == this) currentActivity = null
+        super.onDestroy()
     }
 
     private fun handleBackNavigation(navController: com.example.cyloop.nav.NavController) {

@@ -23,6 +23,8 @@ navigationCompose = "2.9.8"
 lifecycleViewmodelKtx = "2.10.0"
 glancePreview = "1.1.1"
 filekit = "0.8.8"
+krypto = "4.0.10"
+androidxBiometric = "1.2.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -60,6 +62,8 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 androidx-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtx" }
 filekit-compose = { module = "io.github.vinceglb:filekit-compose", version.ref = "filekit" }
 filekit-core = { module = "io.github.vinceglb:filekit-core", version.ref = "filekit" }
+krypto = { module = "com.soywiz.korlibs.krypto:krypto", version.ref = "krypto" }
+androidx-biometric = { module = "androidx.biometric:biometric-ktx", version.ref = "androidxBiometric" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version = "3.4.0" }
 coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor", version = "3.4.0" }
 

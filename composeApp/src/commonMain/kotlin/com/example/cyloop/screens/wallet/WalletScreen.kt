@@ -43,6 +43,7 @@ import com.example.cyloop.font.UIFont
 import com.example.cyloop.storage.AuthPreferences
 import com.example.cyloop.theme.getAppBackgroundBrush
 import com.example.cyloop.screens.main.TabBarView
+import com.example.cyloop.crypto.WalletManager
 import kotlinx.coroutines.launch
 import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.SubcomposeAsyncImageContent
@@ -52,7 +53,7 @@ import coil3.request.crossfade
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WalletScreen(
-    onWalletDetailClick: () -> Unit = {},
+    onWalletDetailClick: (String?) -> Unit = {},
     onPaymentClick: () -> Unit = {},
     bottomPadding: androidx.compose.ui.unit.Dp = 0.dp
 ) {
@@ -68,8 +69,12 @@ fun WalletScreen(
     var isRefreshing by remember { mutableStateOf(false) }
     val pullToRefreshState = rememberPullToRefreshState()
 
+    val walletAddress by WalletManager.walletAddress.collectAsState()
+    var showOnboarding by remember { mutableStateOf(false) }
+    val isWalletOnboarded by AuthPreferences.isWalletOnboarded().collectAsState(initial = false)
+
     val isBalanceVisible by AuthPreferences.isBalanceVisible().collectAsState(initial = true)
-    val userBalance = "1,234.56"
+    val userBalance = if (walletAddress != null) "0.00" else "0.00" // Should fetch real balance
 
     val isDark = true //isSystemInDarkTheme()
     val backgroundGradient = getAppBackgroundBrush()
@@ -252,7 +257,13 @@ fun WalletScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
-                                .clickable { onWalletDetailClick() }
+                                .clickable { 
+                                    if (walletAddress != null) {
+                                        onWalletDetailClick(null)
+                                    } else {
+                                        showOnboarding = true
+                                    }
+                                }
                                 .padding(start = 14.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -265,14 +276,18 @@ fun WalletScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Column {
                                 Text(
-                                    "Wallet",
+                                    if (walletAddress != null) "My Wallet" else "Setup Wallet",
                                     fontWeight = FontWeight.ExtraBold,
                                     fontSize = 11.sp,
                                     color = if (isDark) goldColor.copy(alpha = 0.7f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
                                 )
                                 Text(
-                                    text = if (isBalanceVisible) "$$userBalance" else "$ ****",
-                                    modifier = Modifier.blur(if (isBalanceVisible) 0.dp else 4.dp),
+                                    text = if (walletAddress != null) {
+                                        if (isBalanceVisible) "$$userBalance" else "$ ****"
+                                    } else {
+                                        "Connect"
+                                    },
+                                    modifier = Modifier.blur(if (isBalanceVisible || walletAddress == null) 0.dp else 4.dp),
                                     style = UIFont.ChatName,
                                     color = if (isDark) Color.White else Color.Black
                                 )
@@ -387,6 +402,22 @@ fun WalletScreen(
         }
         
         FloatingNotification(state = notificationState)
+
+        if (showOnboarding) {
+            Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+                WalletOnboardingFlow(
+                    onFinish = { msg ->
+                        scope.launch {
+                            AuthPreferences.setWalletOnboarded(true)
+                            showOnboarding = false
+                            // Immediately open the wallet info view after onboarding
+                            onWalletDetailClick(msg)
+                        }
+                    },
+                    onBack = { showOnboarding = false }
+                )
+            }
+        }
     }
 }
 

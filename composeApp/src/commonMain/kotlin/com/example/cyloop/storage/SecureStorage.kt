@@ -1,11 +1,11 @@
 package com.example.cyloop.storage
 
-expect object SecureStorage {
-    suspend fun getPassword(): String?
-    suspend fun setPassword(password: String)
+expect class SecureStorage() {
+    fun saveString(key: String, value: String)
+    fun getString(key: String): String?
+    fun delete(key: String)
+    fun clear()
+    
+    fun savePassword(password: String)
+    fun getPassword(): String?
 }
-
-expect fun authenticateWithBiometrics(
-    onSuccess: () -> Unit,
-    onFailure: (String) -> Unit
-)

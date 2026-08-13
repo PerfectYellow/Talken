@@ -87,7 +87,7 @@ fun TabBarView(
     onNavigateToChatDetail: (String, String, String?, String?) -> Unit,
     onNavigateToNewChat: () -> Unit,
     onNavigateToUploadContent: () -> Unit = {},
-    onNavigateToWalletDetail: () -> Unit = {},
+    onNavigateToWalletDetail: (String?) -> Unit = {},
     onNavigateToPayment: () -> Unit = {}
 ) {
     var selectedScreen by remember(initialTab) { 
@@ -130,7 +130,7 @@ fun TabBarView(
                             bottomPadding = bottomBarHeight
                         )
                         BottomNavScreen.Wallet -> WalletScreen(
-                            onWalletDetailClick = onNavigateToWalletDetail,
+                            onWalletDetailClick = { msg -> onNavigateToWalletDetail(msg) },
                             onPaymentClick = onNavigateToPayment,
                             bottomPadding = bottomBarHeight - 24.dp
                         )

@@ -69,8 +69,8 @@ fun NavHost(
                     onNavigateToUploadContent = {
                         navController.navigate(Route.UploadContent)
                     },
-                    onNavigateToWalletDetail = {
-                        navController.navigate(Route.WalletDetail)
+                    onNavigateToWalletDetail = { msg ->
+                        navController.navigate(Route.WalletDetail(msg))
                     },
                     onNavigateToPayment = {
                         navController.navigate(Route.Payment)
@@ -131,6 +131,7 @@ fun NavHost(
 
             is Route.WalletDetail -> {
                 WalletInfoView(
+                    successMessage = route.successMessage,
                     onBackClick = {
                         navController.goBack()
                     }

@@ -27,7 +27,7 @@ sealed class Route {
     data object Detail : Route()
 
     @Serializable
-    data object WalletDetail : Route()
+    data class WalletDetail(val successMessage: String? = null) : Route()
 
     @Serializable
     data object Payment : Route()
@@ -50,7 +50,7 @@ fun Route.toNavString(): String = when (this) {
     is Route.UserInfo -> "user_info/${chatName}?addr=${walletAddress ?: ""}&img=${imageUrl ?: ""}&nft=${nftAddress ?: ""}"
     is Route.NewChat -> "new_chat"
     is Route.Detail -> "detail"
-    is Route.WalletDetail -> "wallet_detail"
+    is Route.WalletDetail -> "wallet_detail?msg=${successMessage ?: ""}"
     is Route.Payment -> "payment"
     is Route.NewTransactionRoute -> "new_transaction"
     is Route.BillMaker -> "bill_maker"
