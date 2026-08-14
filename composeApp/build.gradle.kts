@@ -35,6 +35,7 @@ kotlin {
             implementation(libs.ktor.client.android)
             implementation("androidx.security:security-crypto-ktx:1.1.0-alpha06")
             implementation("androidx.biometric:biometric-ktx:1.2.0-alpha05")
+            implementation("org.bouncycastle:bcprov-jdk18on:1.79")
         }
         
         commonMain.dependencies {

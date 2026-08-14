@@ -12,6 +12,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -54,6 +55,8 @@ fun WalletInfoView(
     val solPrice by WalletManager.solPrice.collectAsState()
     val isLoading by WalletManager.isRefreshing.collectAsState()
     val usdcPrice = 1.0 // USDC is stable
+    
+    var hasShownSuccessMessage by rememberSaveable(successMessage) { mutableStateOf(false) }
 
     LaunchedEffect(address) {
         if (address != null && (solPrice == 0.0 && solBalance == 0.0)) {
@@ -62,8 +65,9 @@ fun WalletInfoView(
     }
 
     LaunchedEffect(successMessage) {
-        if (!successMessage.isNullOrBlank()) {
+        if (!successMessage.isNullOrBlank() && !hasShownSuccessMessage) {
             notificationState.showNotification(successMessage, NotificationType.HINT)
+            hasShownSuccessMessage = true
         }
     }
 

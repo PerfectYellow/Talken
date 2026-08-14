@@ -4,7 +4,6 @@ import com.example.cyloop.api.CoinGeckoService
 import com.example.cyloop.api.HeliusService
 import com.example.cyloop.api.SolanaService
 import com.example.cyloop.storage.SecureStorage
-import korlibs.crypto.SHA256
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlin.math.pow
@@ -33,20 +32,6 @@ object WalletManager {
 
     fun hasWallet(): Boolean = _walletAddress.value != null
 
-    val supportedWords = listOf("apple", "banana", "cherry", "date", "elderberry", "fig", "grape", "honeydew", "kiwi", "lemon", "mango", "nectarine")
-
-    suspend fun createWallet(): List<String> {
-        val mnemonicWords = (1..12).map { supportedWords.random() }
-        val mnemonicString = mnemonicWords.joinToString(" ")
-        
-        val privateKeyBytes = deriveKeyFromMnemonic(mnemonicString)
-        val privateKeyHex = privateKeyBytes.map { it.toInt().and(0xFF).toString(16).padStart(2, '0') }.joinToString("")
-        val address = CryptoUtils.encodeBase58(privateKeyBytes)
-        
-        saveWallet(mnemonicString, address, privateKeyHex)
-        return mnemonicWords
-    }
-
     sealed class ImportResult {
         object Success : ImportResult()
         data class InvalidWordCount(val count: Int) : ImportResult()
@@ -54,24 +39,38 @@ object WalletManager {
         data class Error(val message: String) : ImportResult()
     }
 
+    suspend fun createWallet(): List<String> {
+        // Standard BIP-39: 128 bits of entropy for 12 words
+        val entropy = generateSecureRandomBytes(16)
+        val mnemonicWords = Bip39.generateMnemonic(entropy)
+        val mnemonicString = mnemonicWords.joinToString(" ")
+        
+        val keypair = deriveKeypairFromMnemonic(mnemonicString)
+        
+        saveWallet(mnemonicString, keypair.address, keypair.privateKeyHex)
+        return mnemonicWords
+    }
+
     suspend fun importWallet(mnemonic: String): ImportResult {
-        val words = mnemonic.trim().lowercase().split("\\s+".toRegex())
+        val trimmedMnemonic = mnemonic.trim().lowercase()
+        val words = trimmedMnemonic.split("\\s+".toRegex())
         
         if (words.size != 12 && words.size != 24) {
             return ImportResult.InvalidWordCount(words.size)
         }
         
-        val invalidWords = words.filter { it !in supportedWords }
-        if (invalidWords.isNotEmpty()) {
-            return ImportResult.UnknownWords(invalidWords)
+        if (!Bip39.validateMnemonic(trimmedMnemonic)) {
+            val invalidWords = words.filter { it !in Bip39.BIP39_WORDLIST }
+            return if (invalidWords.isNotEmpty()) {
+                ImportResult.UnknownWords(invalidWords)
+            } else {
+                ImportResult.Error("Invalid checksum. Please check the order of your words.")
+            }
         }
         
         try {
-            val privateKeyBytes = deriveKeyFromMnemonic(mnemonic.trim())
-            val privateKeyHex = privateKeyBytes.map { it.toInt().and(0xFF).toString(16).padStart(2, '0') }.joinToString("")
-            val address = CryptoUtils.encodeBase58(privateKeyBytes)
-            
-            saveWallet(mnemonic.trim(), address, privateKeyHex)
+            val keypair = deriveKeypairFromMnemonic(trimmedMnemonic)
+            saveWallet(trimmedMnemonic, keypair.address, keypair.privateKeyHex)
             return ImportResult.Success
         } catch (e: Exception) {
             return ImportResult.Error(e.message ?: "Unknown derivation error")
@@ -105,8 +104,26 @@ object WalletManager {
         }
     }
 
-    private fun deriveKeyFromMnemonic(mnemonic: String): ByteArray {
-        return SHA256.digest(mnemonic.trim().lowercase().encodeToByteArray()).bytes
+    data class DerivedKeypair(
+        val address: String,
+        val privateKeyHex: String
+    )
+
+    private fun deriveKeypairFromMnemonic(mnemonic: String): DerivedKeypair {
+        // 1. BIP-39 Mnemonic -> 64-byte Seed
+        val seed = Bip39.generateSeed(mnemonic)
+        
+        // 2. Derive Ed25519 Seed using Solana standard path: m/44'/501'/0'/0'
+        val derivedSeed = HDWallet.derivePath(seed, "m/44'/501'/0'/0'")
+        
+        // 3. Ed25519 Seed -> Public Key (Address)
+        val publicKeyBytes = Ed25519.derivePublicKey(derivedSeed)
+        val address = CryptoUtils.encodeBase58(publicKeyBytes)
+        
+        // 4. Format Private Key (Hex)
+        val privateKeyHex = derivedSeed.map { it.toInt().and(0xFF).toString(16).padStart(2, '0') }.joinToString("")
+        
+        return DerivedKeypair(address, privateKeyHex)
     }
 
     private fun saveWallet(mnemonic: String, address: String, privateKey: String) {

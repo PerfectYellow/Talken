@@ -26,6 +26,7 @@ filekit = "0.8.8"
 krypto = "4.0.10"
 androidxBiometric = "1.2.0"
 qrcode-kotlin = "4.5.0"
+solana-kotlin = "0.2.3"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -66,6 +67,7 @@ filekit-core = { module = "io.github.vinceglb:filekit-core", version.ref = "file
 krypto = { module = "com.soywiz.korlibs.krypto:krypto", version.ref = "krypto" }
 androidx-biometric = { module = "androidx.biometric:biometric-ktx", version.ref = "androidxBiometric" }
 qrcode-kotlin = { module = "io.github.g0dkar:qrcode-kotlin", version.ref = "qrcode-kotlin" }
+solana-kotlin = { module = "com.solana:solana-kotlin-sdk", version.ref = "solana-kotlin" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version = "3.4.0" }
 coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor", version = "3.4.0" }
 
