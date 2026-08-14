@@ -1,6 +1,7 @@
 package com.example.cyloop.storage
 
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.edit
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
@@ -12,6 +13,7 @@ object AuthPreferences {
     private val BIOMETRIC_ENABLED = booleanPreferencesKey("biometric_enabled")
     private val BALANCE_VISIBLE = booleanPreferencesKey("balance_visible")
     private val WALLET_ONBOARDED = booleanPreferencesKey("wallet_onboarded")
+    private val LAST_KNOWN_BALANCE = stringPreferencesKey("last_known_balance")
 
     // We will need a way to provide the DataStore instance
     // For now, let's assume we can get it from a provider
@@ -19,6 +21,23 @@ object AuthPreferences {
 
     fun init(dataStore: DataStore<Preferences>) {
         this.dataStore = dataStore
+    }
+
+    fun getLastKnownBalance(): Flow<String> {
+        return if (::dataStore.isInitialized) {
+            dataStore.data.map { preferences ->
+                preferences[LAST_KNOWN_BALANCE] ?: "0.00"
+            }
+        } else {
+            emptyFlow()
+        }
+    }
+
+    suspend fun setLastKnownBalance(balance: String) {
+        if (!::dataStore.isInitialized) return
+        dataStore.edit { preferences ->
+            preferences[LAST_KNOWN_BALANCE] = balance
+        }
     }
 
     fun isBiometricEnabled(): Flow<Boolean> {

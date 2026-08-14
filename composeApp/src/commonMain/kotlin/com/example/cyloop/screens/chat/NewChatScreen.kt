@@ -191,10 +191,10 @@ fun NewChatScreen(
             onSave = { result ->
                 val newContact = SavedContact(
                     id = result.id,
-                    name = result.content.metadata.name,
+                    name = result.content?.metadata?.name ?: "Unknown",
                     nftAddress = result.id,
-                    ownerAddress = result.ownership.owner,
-                    imageUrl = result.content.links?.image
+                    ownerAddress = result.ownership?.owner ?: "",
+                    imageUrl = result.content?.links?.image
                 )
                 scope.launch {
                     ContactPreferences.saveContact(newContact)
@@ -256,7 +256,7 @@ fun AddContactSheet(
 
                 assetResult?.let { result ->
                     AsyncImage(
-                        model = result.content.links?.image,
+                        model = result.content?.links?.image,
                         contentDescription = null,
                         modifier = Modifier
                             .size(160.dp)
@@ -306,7 +306,7 @@ fun AddContactSheet(
                                             nftPrice = priceInfo?.price ?: 0.0
                                             
                                             // Fetch wallet balance
-                                            walletBalance = SolanaService.getBalance(result.ownership.owner)
+                                            walletBalance = result.ownership?.owner?.let { SolanaService.getBalance(it) } ?: 0L
                                         }
                                     } catch (e: Exception) {
                                         errorMessage = e.message
@@ -331,14 +331,14 @@ fun AddContactSheet(
                     }
 
                     assetResult?.let { result ->
-                        Text(result.content.metadata.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        Text(result.content?.metadata?.name ?: "Unknown", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                         
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                         ) {
                             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                DetailItem(label = "Owner Wallet", value = result.ownership.owner)
+                                DetailItem(label = "Owner Wallet", value = result.ownership?.owner ?: "Unknown")
                                 HorizontalDivider()
 
                                 Text("NFT Price", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.secondary)

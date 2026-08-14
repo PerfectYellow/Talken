@@ -1,14 +1,31 @@
 package com.example.cyloop.crypto
 
+import com.example.cyloop.api.CoinGeckoService
+import com.example.cyloop.api.HeliusService
+import com.example.cyloop.api.SolanaService
 import com.example.cyloop.storage.SecureStorage
 import korlibs.crypto.SHA256
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlin.math.pow
 
 object WalletManager {
     private val secureStorage = SecureStorage()
     private val _walletAddress = MutableStateFlow<String?>(null)
     val walletAddress: StateFlow<String?> = _walletAddress
+
+    // Shared State for Balances
+    private val _solBalance = MutableStateFlow(0.0)
+    val solBalance: StateFlow<Double> = _solBalance
+
+    private val _usdcBalance = MutableStateFlow(0.0)
+    val usdcBalance: StateFlow<Double> = _usdcBalance
+
+    private val _solPrice = MutableStateFlow(0.0)
+    val solPrice: StateFlow<Double> = _solPrice
+
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing
 
     init {
         _walletAddress.value = secureStorage.getString("wallet_address")
@@ -19,14 +36,11 @@ object WalletManager {
     val supportedWords = listOf("apple", "banana", "cherry", "date", "elderberry", "fig", "grape", "honeydew", "kiwi", "lemon", "mango", "nectarine")
 
     suspend fun createWallet(): List<String> {
-        // Simple random mnemonic generation for demonstration
         val mnemonicWords = (1..12).map { supportedWords.random() }
         val mnemonicString = mnemonicWords.joinToString(" ")
         
         val privateKeyBytes = deriveKeyFromMnemonic(mnemonicString)
         val privateKeyHex = privateKeyBytes.map { it.toInt().and(0xFF).toString(16).padStart(2, '0') }.joinToString("")
-        
-        // Address is Base58 encoded bytes
         val address = CryptoUtils.encodeBase58(privateKeyBytes)
         
         saveWallet(mnemonicString, address, privateKeyHex)
@@ -64,8 +78,34 @@ object WalletManager {
         }
     }
 
+    suspend fun refreshBalances() {
+        val addr = _walletAddress.value ?: return
+        if (_isRefreshing.value) return
+        
+        _isRefreshing.value = true
+        try {
+            // 1. Fetch SOL
+            val lamports = SolanaService.getBalance(addr)
+            _solBalance.value = lamports / 10.0.pow(9.0)
+
+            // 2. Fetch Assets (USDC)
+            val assets = HeliusService.getAssetsByOwner(addr)
+            val usdcToken = assets.find { it.token_info?.symbol == "USDC" }
+            _usdcBalance.value = usdcToken?.token_info?.let { 
+                it.balance.toDouble() / 10.0.pow(it.decimals.toDouble()) 
+            } ?: 0.0
+
+            // 3. Fetch Prices
+            val coins = CoinGeckoService.getCoins()
+            _solPrice.value = coins.find { it.symbol.lowercase() == "sol" }?.current_price ?: 0.0
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            _isRefreshing.value = false
+        }
+    }
+
     private fun deriveKeyFromMnemonic(mnemonic: String): ByteArray {
-        // Deterministic derivation: hash the mnemonic string
         return SHA256.digest(mnemonic.trim().lowercase().encodeToByteArray()).bytes
     }
 
@@ -84,5 +124,8 @@ object WalletManager {
         secureStorage.delete("wallet_address")
         secureStorage.delete("wallet_private_key")
         _walletAddress.value = null
+        _solBalance.value = 0.0
+        _usdcBalance.value = 0.0
+        _solPrice.value = 0.0
     }
 }

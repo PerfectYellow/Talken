@@ -44,7 +44,10 @@ import com.example.cyloop.storage.AuthPreferences
 import com.example.cyloop.theme.getAppBackgroundBrush
 import com.example.cyloop.screens.main.TabBarView
 import com.example.cyloop.crypto.WalletManager
+import com.example.cyloop.api.SolanaService
+import com.example.cyloop.api.HeliusService
 import kotlinx.coroutines.launch
+import kotlin.math.pow
 import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.SubcomposeAsyncImageContent
 import coil3.request.ImageRequest
@@ -74,7 +77,32 @@ fun WalletScreen(
     val isWalletOnboarded by AuthPreferences.isWalletOnboarded().collectAsState(initial = false)
 
     val isBalanceVisible by AuthPreferences.isBalanceVisible().collectAsState(initial = true)
-    val userBalance = if (walletAddress != null) "0.00" else "0.00" // Should fetch real balance
+    val persistentBalance by AuthPreferences.getLastKnownBalance().collectAsState(initial = "0.00")
+    
+    // Use Shared State from WalletManager
+    val solBalance by WalletManager.solBalance.collectAsState()
+    val usdcBalance by WalletManager.usdcBalance.collectAsState()
+    val solPrice by WalletManager.solPrice.collectAsState()
+    val isUpdatingBalance by WalletManager.isRefreshing.collectAsState()
+    
+    var userBalance by remember { mutableStateOf(persistentBalance) }
+    var hasFetchedOnce by remember { mutableStateOf(false) }
+
+    LaunchedEffect(solBalance, usdcBalance, solPrice) {
+        if (solPrice > 0 || solBalance > 0 || usdcBalance > 0) {
+            val totalValue = (solBalance * solPrice) + usdcBalance
+            val formattedBalance = totalValue.format(2)
+            userBalance = formattedBalance
+            AuthPreferences.setLastKnownBalance(formattedBalance)
+            hasFetchedOnce = true
+        }
+    }
+
+    LaunchedEffect(walletAddress) {
+        if (walletAddress != null) {
+            WalletManager.refreshBalances()
+        }
+    }
 
     val isDark = true //isSystemInDarkTheme()
     val backgroundGradient = getAppBackgroundBrush()
@@ -281,13 +309,31 @@ fun WalletScreen(
                                     fontSize = 11.sp,
                                     color = if (isDark) goldColor.copy(alpha = 0.7f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
                                 )
+                                val infiniteTransition = rememberInfiniteTransition()
+                                val waveAlpha by infiniteTransition.animateFloat(
+                                    initialValue = 0.3f,
+                                    targetValue = 0.8f,
+                                    animationSpec = infiniteRepeatable(
+                                        animation = tween(1000, easing = LinearEasing),
+                                        repeatMode = RepeatMode.Reverse
+                                    )
+                                )
+
                                 Text(
                                     text = if (walletAddress != null) {
-                                        if (isBalanceVisible) "$$userBalance" else "$ ****"
+                                        if (isBalanceVisible) {
+                                            if (!hasFetchedOnce && userBalance == "0.00") "..." else "$$userBalance"
+                                        } else "$ ****"
                                     } else {
                                         "Connect"
                                     },
-                                    modifier = Modifier.blur(if (isBalanceVisible || walletAddress == null) 0.dp else 4.dp),
+                                    modifier = Modifier
+                                        .blur(if (isBalanceVisible || walletAddress == null) 0.dp else 4.dp)
+                                        .graphicsLayer { 
+                                            alpha = if (!hasFetchedOnce && walletAddress != null && userBalance == "0.00") waveAlpha 
+                                                   else if (isUpdatingBalance && walletAddress != null) 0.7f 
+                                                   else 1.0f 
+                                        },
                                     style = UIFont.ChatName,
                                     color = if (isDark) Color.White else Color.Black
                                 )

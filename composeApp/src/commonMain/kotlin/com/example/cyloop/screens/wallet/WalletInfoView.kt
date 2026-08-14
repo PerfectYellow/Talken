@@ -29,6 +29,10 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.sp
+import com.example.cyloop.api.HeliusService
+import com.example.cyloop.api.CoinGeckoService
+import com.example.cyloop.format
+import kotlin.math.pow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,6 +46,19 @@ fun WalletInfoView(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
     val clipboardManager = LocalClipboardManager.current
+
+    // Use Shared State from WalletManager
+    val solBalance by WalletManager.solBalance.collectAsState()
+    val usdcBalance by WalletManager.usdcBalance.collectAsState()
+    val solPrice by WalletManager.solPrice.collectAsState()
+    val isLoading by WalletManager.isRefreshing.collectAsState()
+    val usdcPrice = 1.0 // USDC is stable
+
+    LaunchedEffect(address) {
+        if (address != null && (solPrice == 0.0 && solBalance == 0.0)) {
+            WalletManager.refreshBalances()
+        }
+    }
 
     LaunchedEffect(successMessage) {
         if (!successMessage.isNullOrBlank()) {
@@ -232,14 +249,23 @@ fun WalletInfoView(
                                 style = MaterialTheme.typography.labelLarge,
                                 color = Color.White.copy(alpha = 0.8f)
                             )
-                            Text(
-                                text = "$0.00",
-                                style = MaterialTheme.typography.displayMedium.copy(
-                                    fontWeight = FontWeight.Black,
-                                    letterSpacing = (-1).sp
-                                ),
-                                color = Color.White
-                            )
+                            
+                            if (isLoading) {
+                                CircularProgressIndicator(
+                                    color = Color.White,
+                                    modifier = Modifier.size(32.dp).padding(4.dp)
+                                )
+                            } else {
+                                val totalValue = (solBalance * solPrice) + (usdcBalance * usdcPrice)
+                                Text(
+                                    text = "$${totalValue.format(2)}",
+                                    style = MaterialTheme.typography.displayMedium.copy(
+                                        fontWeight = FontWeight.Black,
+                                        letterSpacing = (-1).sp
+                                    ),
+                                    color = Color.White
+                                )
+                            }
                             
                             Spacer(modifier = Modifier.height(16.dp))
                             
@@ -300,16 +326,16 @@ fun WalletInfoView(
                     AssetItem(
                         name = "Solana",
                         symbol = "SOL",
-                        balance = "0.00",
-                        value = "$0.00",
+                        balance = solBalance.format(4),
+                        value = "$${(solBalance * solPrice).format(2)}",
                         icon = Icons.Default.CurrencyBitcoin, // Placeholder
                         color = Color(0xFF14F195)
                     )
                     AssetItem(
                         name = "USD Coin",
                         symbol = "USDC",
-                        balance = "0.00",
-                        value = "$0.00",
+                        balance = usdcBalance.format(2),
+                        value = "$${(usdcBalance * usdcPrice).format(2)}",
                         icon = Icons.Default.MonetizationOn,
                         color = Color(0xFF2775CA)
                     )
