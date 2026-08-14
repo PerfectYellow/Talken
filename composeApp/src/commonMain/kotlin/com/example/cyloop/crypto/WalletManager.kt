@@ -47,7 +47,7 @@ object WalletManager {
         
         val keypair = deriveKeypairFromMnemonic(mnemonicString)
         
-        saveWallet(mnemonicString, keypair.address, keypair.privateKeyHex)
+        saveWallet(mnemonicString, keypair.address, keypair.privateKeyBase58)
         return mnemonicWords
     }
 
@@ -60,7 +60,7 @@ object WalletManager {
         }
         
         if (!Bip39.validateMnemonic(trimmedMnemonic)) {
-            val invalidWords = words.filter { it !in Bip39.BIP39_WORDLIST }
+            val invalidWords = words.filter { it !in Bip39.getWordList() }
             return if (invalidWords.isNotEmpty()) {
                 ImportResult.UnknownWords(invalidWords)
             } else {
@@ -70,7 +70,7 @@ object WalletManager {
         
         try {
             val keypair = deriveKeypairFromMnemonic(trimmedMnemonic)
-            saveWallet(trimmedMnemonic, keypair.address, keypair.privateKeyHex)
+            saveWallet(trimmedMnemonic, keypair.address, keypair.privateKeyBase58)
             return ImportResult.Success
         } catch (e: Exception) {
             return ImportResult.Error(e.message ?: "Unknown derivation error")
@@ -106,7 +106,7 @@ object WalletManager {
 
     data class DerivedKeypair(
         val address: String,
-        val privateKeyHex: String
+        val privateKeyBase58: String
     )
 
     private fun deriveKeypairFromMnemonic(mnemonic: String): DerivedKeypair {
@@ -120,10 +120,11 @@ object WalletManager {
         val publicKeyBytes = Ed25519.derivePublicKey(derivedSeed)
         val address = CryptoUtils.encodeBase58(publicKeyBytes)
         
-        // 4. Format Private Key (Hex)
-        val privateKeyHex = derivedSeed.map { it.toInt().and(0xFF).toString(16).padStart(2, '0') }.joinToString("")
+        // 4. Format Private Key (Standard Solana 64-byte: [32-byte seed] + [32-byte public key])
+        val fullPrivateKeyBytes = derivedSeed + publicKeyBytes
+        val privateKeyBase58 = CryptoUtils.encodeBase58(fullPrivateKeyBytes)
         
-        return DerivedKeypair(address, privateKeyHex)
+        return DerivedKeypair(address, privateKeyBase58)
     }
 
     private fun saveWallet(mnemonic: String, address: String, privateKey: String) {
