@@ -50,6 +50,7 @@ kotlin {
             implementation(libs.filekit.compose)
             implementation(libs.filekit.core)
             implementation(libs.krypto)
+            implementation(libs.qrcode.kotlin)
             implementation("org.jetbrains.compose.material:material-icons-extended:1.7.3")
 
             implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.7")

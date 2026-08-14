@@ -38,7 +38,8 @@ import kotlin.math.pow
 @Composable
 fun WalletInfoView(
     successMessage: String? = null,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onDepositClick: (String) -> Unit = {}
 ) {
     val address by WalletManager.walletAddress.collectAsState()
     val scope = rememberCoroutineScope()
@@ -354,7 +355,9 @@ fun WalletInfoView(
                     QuickActionButton(
                         icon = Icons.Default.Add,
                         label = "Deposit",
-                        onClick = { /* TODO: Deposit */ },
+                        onClick = { 
+                            address?.let { onDepositClick(it) }
+                        },
                         modifier = Modifier.weight(1f)
                     )
                     QuickActionButton(

@@ -10,6 +10,7 @@ import com.example.cyloop.screens.chat.ChatDetailScreen
 import com.example.cyloop.screens.chat.NewChatScreen
 import com.example.cyloop.screens.chat.UserInfoScreen
 import com.example.cyloop.screens.wallet.WalletInfoView
+import com.example.cyloop.screens.wallet.DepositScreen
 import com.example.cyloop.screens.wallet.PaymentInfoView
 import com.example.cyloop.screens.wallet.NewTransactionView
 import com.example.cyloop.screens.wallet.BillMakerView
@@ -132,6 +133,18 @@ fun NavHost(
             is Route.WalletDetail -> {
                 WalletInfoView(
                     successMessage = route.successMessage,
+                    onBackClick = {
+                        navController.goBack()
+                    },
+                    onDepositClick = { addr ->
+                        navController.navigate(Route.Deposit(addr))
+                    }
+                )
+            }
+
+            is Route.Deposit -> {
+                DepositScreen(
+                    walletAddress = route.walletAddress,
                     onBackClick = {
                         navController.goBack()
                     }
