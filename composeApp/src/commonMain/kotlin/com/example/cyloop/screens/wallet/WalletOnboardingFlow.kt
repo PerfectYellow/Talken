@@ -31,18 +31,21 @@ import kotlinx.coroutines.launch
 enum class OnboardingStep {
     WELCOME,
     CREATE_GENERATE,
-    IMPORT
+    IMPORT_MNEMONIC,
+    IMPORT_PRIVATE_KEY
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WalletOnboardingFlow(
+    initialStep: OnboardingStep = OnboardingStep.WELCOME,
     onFinish: (String?) -> Unit,
     onBack: () -> Unit
 ) {
-    var currentStep by remember { mutableStateOf(OnboardingStep.WELCOME) }
+    var currentStep by remember { mutableStateOf(initialStep) }
     var generatedMnemonic by remember { mutableStateOf<List<String>>(emptyList()) }
-    var importMnemonic by remember { mutableStateOf("") }
+    var importText by remember { mutableStateOf("") }
+    var walletName by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     var isLoading by remember { mutableStateOf(false) }
     val notificationState = rememberNotificationState()
@@ -162,8 +165,11 @@ fun WalletOnboardingFlow(
                             onCreateNew = {
                                 showCreateConfirm = true
                             },
-                            onImportExisting = {
-                                currentStep = OnboardingStep.IMPORT
+                            onImportMnemonic = {
+                                currentStep = OnboardingStep.IMPORT_MNEMONIC
+                            },
+                            onImportPrivateKey = {
+                                currentStep = OnboardingStep.IMPORT_PRIVATE_KEY
                             }
                         )
                         OnboardingStep.CREATE_GENERATE -> MnemonicDisplayStep(
@@ -172,12 +178,12 @@ fun WalletOnboardingFlow(
                                 onFinish("Wallet created successfully!")
                             }
                         )
-                        OnboardingStep.IMPORT -> ImportStep(
-                            mnemonicText = importMnemonic,
-                            onMnemonicChange = { importMnemonic = it },
+                        OnboardingStep.IMPORT_MNEMONIC -> ImportMnemonicStep(
+                            mnemonicText = importText,
+                            onMnemonicChange = { importText = it },
                             onImport = {
                                 scope.launch {
-                                    when (val result = WalletManager.importWallet(importMnemonic)) {
+                                    when (val result = WalletManager.importWallet(importText)) {
                                         is WalletManager.ImportResult.Success -> {
                                             onFinish("Wallet imported successfully!")
                                         }
@@ -203,6 +209,25 @@ fun WalletOnboardingFlow(
                                 }
                             }
                         )
+                        OnboardingStep.IMPORT_PRIVATE_KEY -> ImportPrivateKeyStep(
+                            pkText = importText,
+                            onPkChange = { importText = it },
+                            onImport = {
+                                scope.launch {
+                                    isLoading = true
+                                    val success = WalletManager.importWalletByPrivateKey(importText)
+                                    isLoading = false
+                                    if (success) {
+                                        onFinish("Wallet imported successfully!")
+                                    } else {
+                                        notificationState.showNotification(
+                                            "Invalid Private Key. Please check the format.",
+                                            NotificationType.ERROR
+                                        )
+                                    }
+                                }
+                            }
+                        )
                     }
                 }
             }
@@ -216,7 +241,11 @@ fun WalletOnboardingFlow(
 }
 
 @Composable
-fun WelcomeStep(onCreateNew: () -> Unit, onImportExisting: () -> Unit) {
+fun WelcomeStep(
+    onCreateNew: () -> Unit, 
+    onImportMnemonic: () -> Unit,
+    onImportPrivateKey: () -> Unit
+) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(32.dp),
@@ -282,14 +311,22 @@ fun WelcomeStep(onCreateNew: () -> Unit, onImportExisting: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
             
             OutlinedButton(
-                onClick = onImportExisting,
+                onClick = onImportMnemonic,
                 modifier = Modifier.fillMaxWidth().height(60.dp),
                 shape = RoundedCornerShape(20.dp),
                 border = androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
             ) {
-                Icon(Icons.Default.FileUpload, contentDescription = null)
+                Icon(Icons.Default.Password, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("I Already Have a Wallet", fontWeight = FontWeight.Bold)
+                Text("Import Recovery Phrase", fontWeight = FontWeight.Bold)
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            TextButton(onClick = onImportPrivateKey) {
+                Icon(Icons.Default.VpnKey, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Import Private Key")
             }
         }
     }
@@ -443,10 +480,10 @@ fun MnemonicDisplayStep(mnemonic: List<String>, onNext: () -> Unit) {
 }
 
 @Composable
-fun ImportStep(mnemonicText: String, onMnemonicChange: (String) -> Unit, onImport: () -> Unit) {
+fun ImportMnemonicStep(mnemonicText: String, onMnemonicChange: (String) -> Unit, onImport: () -> Unit) {
     val wordCount = if (mnemonicText.isBlank()) 0 else mnemonicText.trim().split("\\s+".toRegex()).size
 
-    Text("Import Wallet", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+    Text("Import Recovery Phrase", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
     Text("Enter your 12 or 24 word recovery phrase in the correct order.", modifier = Modifier.padding(vertical = 16.dp))
     
     OutlinedTextField(
@@ -469,6 +506,32 @@ fun ImportStep(mnemonicText: String, onMnemonicChange: (String) -> Unit, onImpor
         onClick = onImport,
         modifier = Modifier.fillMaxWidth().height(56.dp),
         enabled = mnemonicText.isNotBlank(),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Text("Import Wallet")
+    }
+}
+
+@Composable
+fun ImportPrivateKeyStep(pkText: String, onPkChange: (String) -> Unit, onImport: () -> Unit) {
+    Text("Import Private Key", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+    Text("Paste your Solana private key in Base58 format.", modifier = Modifier.padding(vertical = 16.dp))
+    
+    OutlinedTextField(
+        value = pkText,
+        onValueChange = onPkChange,
+        modifier = Modifier.fillMaxWidth().height(120.dp),
+        label = { Text("Private Key (Base58)") },
+        placeholder = { Text("Enter your private key...") },
+        shape = RoundedCornerShape(16.dp),
+        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation()
+    )
+    
+    Spacer(modifier = Modifier.height(32.dp))
+    Button(
+        onClick = onImport,
+        modifier = Modifier.fillMaxWidth().height(56.dp),
+        enabled = pkText.isNotBlank(),
         shape = RoundedCornerShape(16.dp)
     ) {
         Text("Import Wallet")

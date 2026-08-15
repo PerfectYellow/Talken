@@ -21,12 +21,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.cyloop.crypto.WalletManager
+import com.example.cyloop.crypto.WalletInfo
 import com.example.cyloop.components.FloatingNotification
 import com.example.cyloop.components.NotificationType
 import com.example.cyloop.components.rememberNotificationState
 import io.github.vinceglb.filekit.compose.rememberFileSaverLauncher
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.sp
@@ -43,10 +45,16 @@ fun WalletInfoView(
     onDepositClick: (String) -> Unit = {}
 ) {
     val address by WalletManager.walletAddress.collectAsState()
+    val wallets by WalletManager.wallets.collectAsState()
+    val activeWallet = wallets.find { it.address == address }
+    
     val scope = rememberCoroutineScope()
     val notificationState = rememberNotificationState()
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
+    var showWalletSwitcher by remember { mutableStateOf(false) }
+    var showAddWalletOverlay by remember { mutableStateOf(false) }
+    var initialOnboardingStep by remember { mutableStateOf(OnboardingStep.WELCOME) }
     val clipboardManager = LocalClipboardManager.current
 
     // Use Shared State from WalletManager
@@ -59,7 +67,7 @@ fun WalletInfoView(
     var hasShownSuccessMessage by rememberSaveable(successMessage) { mutableStateOf(false) }
 
     LaunchedEffect(address) {
-        if (address != null && (solPrice == 0.0 && solBalance == 0.0)) {
+        if (address != null) {
             WalletManager.refreshBalances()
         }
     }
@@ -117,7 +125,7 @@ fun WalletInfoView(
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     Text(
-                        text = "This will remove your private keys from this device. You will lose access unless you have your 12-word recovery phrase saved elsewhere.",
+                        text = "This will remove '${activeWallet?.name ?: "this wallet"}' from this device. You will lose access unless you have your recovery phrase or private key saved elsewhere.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -142,7 +150,9 @@ fun WalletInfoView(
                                 scope.launch {
                                     WalletManager.deleteWallet()
                                     showDeleteDialog = false
-                                    onBackClick()
+                                    if (!WalletManager.hasWallet()) {
+                                        onBackClick()
+                                    }
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(
@@ -159,16 +169,138 @@ fun WalletInfoView(
         }
     }
 
+    if (showWalletSwitcher) {
+        ModalBottomSheet(
+            onDismissRequest = { showWalletSwitcher = false },
+            dragHandle = { BottomSheetDefaults.DragHandle() },
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 32.dp)
+            ) {
+                Text(
+                    text = "Manage Wallets",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
+                )
+                
+                wallets.forEach { wallet ->
+                    val isActive = wallet.address == address
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                WalletManager.switchWallet(wallet.address)
+                                showWalletSwitcher = false
+                            },
+                        color = if (isActive) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f) 
+                                else Color.Transparent
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.Default.AccountBalanceWallet,
+                                        contentDescription = null,
+                                        tint = if (isActive) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.width(16.dp))
+                            
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = wallet.name,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "${wallet.address.take(8)}...${wallet.address.takeLast(8)}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            
+                            if (isActive) {
+                                Icon(
+                                    Icons.Default.Check,
+                                    contentDescription = "Active",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 24.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+
+                TextButton(
+                    onClick = {
+                        showWalletSwitcher = false
+                        initialOnboardingStep = OnboardingStep.WELCOME
+                        showAddWalletOverlay = true
+                    },
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Add Another Wallet")
+                }
+            }
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             topBar = {
                 TopAppBar(
                     title = { 
-                        Text(
-                            "My Wallet",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        ) 
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { showWalletSwitcher = true }
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.AccountBalanceWallet,
+                                contentDescription = null,
+                                modifier = Modifier.size(30.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    activeWallet?.name ?: "My Wallet",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    "Solana Network",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Icon(
+                                Icons.Default.KeyboardArrowDown,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp).padding(start = 4.dp)
+                            )
+                        }
                     },
                     navigationIcon = {
                         IconButton(onClick = onBackClick) {
@@ -184,6 +316,36 @@ fun WalletInfoView(
                                 expanded = showMenu,
                                 onDismissRequest = { showMenu = false }
                             ) {
+//                                if (wallets.size > 1) {
+//                                    DropdownMenuItem(
+//                                        text = { Text("Switch Wallet") },
+//                                        leadingIcon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = null) },
+//                                        onClick = {
+//                                            showMenu = false
+//                                            showWalletSwitcher = true
+//                                        }
+//                                    )
+//                                    HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+//                                }
+//                                DropdownMenuItem(
+//                                    text = { Text("Create Another Wallet") },
+//                                    leadingIcon = { Icon(Icons.Default.AddCircleOutline, contentDescription = null) },
+//                                    onClick = {
+//                                        showMenu = false
+//                                        initialOnboardingStep = OnboardingStep.CREATE_GENERATE
+//                                        showAddWalletOverlay = true
+//                                    }
+//                                )
+//                                DropdownMenuItem(
+//                                    text = { Text("Import Another Wallet") },
+//                                    leadingIcon = { Icon(Icons.Default.FileUpload, contentDescription = null) },
+//                                    onClick = {
+//                                        showMenu = false
+//                                        initialOnboardingStep = OnboardingStep.WELCOME
+//                                        showAddWalletOverlay = true
+//                                    }
+//                                )
+//                                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
                                 DropdownMenuItem(
                                     text = { Text("Save Backup") },
                                     leadingIcon = { Icon(Icons.Default.Save, contentDescription = null) },
@@ -191,10 +353,10 @@ fun WalletInfoView(
                                         showMenu = false
                                         val mnemonic = WalletManager.getMnemonic() ?: "No mnemonic found"
                                         val privateKey = WalletManager.getPrivateKey() ?: ""
-                                        val content = "Wallet Backup\n\nAddress: $address\nRecovery Phrase: $mnemonic\nPrivate Key: $privateKey"
+                                        val content = "Wallet Backup\n\nName: ${activeWallet?.name}\nAddress: $address\nRecovery Phrase: $mnemonic\nPrivate Key: $privateKey"
                                         saverLauncher.launch(
                                             bytes = content.encodeToByteArray(),
-                                            baseName = "cyloop_wallet_backup",
+                                            baseName = "cyloop_wallet_backup_${activeWallet?.name?.replace(" ", "_")}",
                                             extension = "txt"
                                         )
                                     }
@@ -386,6 +548,23 @@ fun WalletInfoView(
             state = notificationState,
             modifier = Modifier.align(Alignment.TopCenter)
         )
+
+        if (showAddWalletOverlay) {
+            Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+                WalletOnboardingFlow(
+                    initialStep = initialOnboardingStep,
+                    onFinish = { msg ->
+                        showAddWalletOverlay = false
+                        if (msg != null) {
+                            scope.launch {
+                                notificationState.showNotification(msg, NotificationType.HINT)
+                            }
+                        }
+                    },
+                    onBack = { showAddWalletOverlay = false }
+                )
+            }
+        }
     }
 }
 

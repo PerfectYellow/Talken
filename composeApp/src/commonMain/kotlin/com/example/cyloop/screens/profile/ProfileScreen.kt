@@ -122,17 +122,17 @@ fun ProfileScreen(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
                     )
 
-                    ProfileMenuItemModernSurface(
-                        icon = Icons.Default.Publish,
-                        title = "Export Wallet",
-                        onClick = onExportWalletClick
-                    )
+//                    ProfileMenuItemModernSurface(
+//                        icon = Icons.Default.Publish,
+//                        title = "Export Wallet",
+//                        onClick = onExportWalletClick
+//                    )
 
-                    HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = 24.dp),
-                        thickness = 0.5.dp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
-                    )
+//                    HorizontalDivider(
+//                        modifier = Modifier.padding(horizontal = 24.dp),
+//                        thickness = 0.5.dp,
+//                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+//                    )
 
                     ProfileMenuItemModernSurface(
                         icon = Icons.AutoMirrored.Filled.Logout,
