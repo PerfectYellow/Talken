@@ -33,6 +33,9 @@ sealed class Route {
     data class Deposit(val walletAddress: String) : Route()
 
     @Serializable
+    data class Send(val fromAddress: String) : Route()
+
+    @Serializable
     data object Payment : Route()
 
     @Serializable
@@ -55,6 +58,7 @@ fun Route.toNavString(): String = when (this) {
     is Route.Detail -> "detail"
     is Route.WalletDetail -> "wallet_detail?msg=${successMessage ?: ""}"
     is Route.Deposit -> "deposit/${walletAddress}"
+    is Route.Send -> "send/${fromAddress}"
     is Route.Payment -> "payment"
     is Route.NewTransactionRoute -> "new_transaction"
     is Route.BillMaker -> "bill_maker"

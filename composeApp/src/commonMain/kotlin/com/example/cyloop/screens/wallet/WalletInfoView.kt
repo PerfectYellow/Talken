@@ -42,7 +42,8 @@ import kotlin.math.pow
 fun WalletInfoView(
     successMessage: String? = null,
     onBackClick: () -> Unit,
-    onDepositClick: (String) -> Unit = {}
+    onDepositClick: (String) -> Unit = {},
+    onSendClick: (String) -> Unit = {}
 ) {
     val address by WalletManager.walletAddress.collectAsState()
     val wallets by WalletManager.wallets.collectAsState()
@@ -519,23 +520,19 @@ fun WalletInfoView(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     QuickActionButton(
-                        icon = Icons.Default.Add,
-                        label = "Deposit",
+                        icon = Icons.Default.SouthWest,
+                        label = "Receive",
                         onClick = { 
                             address?.let { onDepositClick(it) }
                         },
                         modifier = Modifier.weight(1f)
                     )
                     QuickActionButton(
-                        icon = Icons.Default.Send,
+                        icon = Icons.Default.NorthEast,
                         label = "Send",
-                        onClick = { /* TODO: Send */ },
-                        modifier = Modifier.weight(1f)
-                    )
-                    QuickActionButton(
-                        icon = Icons.Default.QrCodeScanner,
-                        label = "Scan",
-                        onClick = { /* TODO: Scan QR */ },
+                        onClick = { 
+                            address?.let { onSendClick(it) }
+                        },
                         modifier = Modifier.weight(1f)
                     )
                 }

@@ -11,6 +11,7 @@ import com.example.cyloop.screens.chat.NewChatScreen
 import com.example.cyloop.screens.chat.UserInfoScreen
 import com.example.cyloop.screens.wallet.WalletInfoView
 import com.example.cyloop.screens.wallet.DepositScreen
+import com.example.cyloop.screens.wallet.SendView
 import com.example.cyloop.screens.wallet.PaymentInfoView
 import com.example.cyloop.screens.wallet.NewTransactionView
 import com.example.cyloop.screens.wallet.BillMakerView
@@ -138,6 +139,9 @@ fun NavHost(
                     },
                     onDepositClick = { addr ->
                         navController.navigate(Route.Deposit(addr))
+                    },
+                    onSendClick = { addr ->
+                        navController.navigate(Route.Send(addr))
                     }
                 )
             }
@@ -145,6 +149,15 @@ fun NavHost(
             is Route.Deposit -> {
                 DepositScreen(
                     walletAddress = route.walletAddress,
+                    onBackClick = {
+                        navController.goBack()
+                    }
+                )
+            }
+
+            is Route.Send -> {
+                SendView(
+                    fromAddress = route.fromAddress,
                     onBackClick = {
                         navController.goBack()
                     }

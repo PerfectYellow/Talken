@@ -75,12 +75,12 @@ fun PaymentInfoView(
                     text = { Text("Bill Maker") },
                     modifier = Modifier.weight(1f)
                 )
-                ExtendedFloatingActionButton(
-                    onClick = onNewTransactionClick,
-                    icon = { Icon(Icons.Filled.Add, "New Transaction") },
-                    text = { Text("New Transaction") },
-                    modifier = Modifier.weight(1f)
-                )
+//                ExtendedFloatingActionButton(
+//                    onClick = onNewTransactionClick,
+//                    icon = { Icon(Icons.Filled.Add, "New Transaction") },
+//                    text = { Text("New Transaction") },
+//                    modifier = Modifier.weight(1f)
+//                )
             }
         },
         floatingActionButtonPosition = FabPosition.Center

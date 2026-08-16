@@ -26,6 +26,7 @@ import kotlin.time.Clock
 @Composable
 fun FlowCell(
     flowItem: PostItem,
+    onBackFlowClick: (PostItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val isDark = true //isSystemInDarkTheme()
@@ -181,7 +182,7 @@ fun FlowCell(
                 }
 
                 Button(
-                    onClick = { /* TODO */ },
+                    onClick = { onBackFlowClick(flowItem) },
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.Transparent,
@@ -235,7 +236,8 @@ fun FlowCellPreview() {
                     timeLeft = "2d left"
                 ),
                 createdAt = Clock.System.now().toEpochMilliseconds() - 345600000 // 4 days ago
-            )
+            ),
+            onBackFlowClick = {}
         )
     }
 }

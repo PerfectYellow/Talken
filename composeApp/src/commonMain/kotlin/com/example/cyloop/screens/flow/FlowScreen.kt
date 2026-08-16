@@ -1,5 +1,9 @@
 package com.example.cyloop.screens.flow
 
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -35,6 +39,11 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
+
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.material.icons.filled.UnfoldMore
+import androidx.compose.ui.graphics.graphicsLayer
 
 // Data Models
 data class PostItem(
@@ -77,6 +86,11 @@ fun FlowScreen(
     val notificationState = rememberNotificationState()
     val listState = rememberLazyListState()
     var messageText by remember { mutableStateOf("") }
+
+    var showDonationSheet by remember { mutableStateOf(false) }
+    var selectedPostForDonation by remember { mutableStateOf<PostItem?>(null) }
+    val donationSheetState = rememberModalBottomSheetState()
+    var donationAmount by remember { mutableStateOf("") }
 
     val targetAddress = "CV1vESFrRPhXdZVtG7vcvitnmYgXBoxbzasb9po4UaC"
 
@@ -206,7 +220,13 @@ fun FlowScreen(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         items(feedItems, key = { it.postId }) { post ->
-                            FlowCell(flowItem = post)
+                            FlowCell(
+                                flowItem = post,
+                                onBackFlowClick = { selectedPost ->
+                                    selectedPostForDonation = selectedPost
+                                    showDonationSheet = true
+                                }
+                            )
                         }
                     }
                 }
@@ -271,6 +291,93 @@ fun FlowScreen(
         }
 
         FloatingNotification(state = notificationState)
+
+        if (showDonationSheet && selectedPostForDonation != null) {
+            ModalBottomSheet(
+                onDismissRequest = {
+                    showDonationSheet = false
+                    donationAmount = ""
+                },
+                sheetState = donationSheetState,
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                containerColor = MaterialTheme.colorScheme.surface
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 16.dp)
+                        .navigationBarsPadding(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Back this Flow",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Text(
+                        text = "How much do you want to donate to ${selectedPostForDonation!!.author.username}?",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    OutlinedTextField(
+                        value = donationAmount,
+                        onValueChange = { 
+                            if (it.isEmpty() || it.toDoubleOrNull() != null) {
+                                donationAmount = it
+                            }
+                        },
+                        label = { Text("Amount (SOL)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        placeholder = { Text("0.0") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(32.dp))
+                    
+                    Button(
+                        onClick = {
+                            val amount = donationAmount.toDoubleOrNull() ?: 0.0
+                            if (amount > 0) {
+                                scope.launch {
+                                    notificationState.showNotification(
+                                        "Sending $amount SOL to ${selectedPostForDonation!!.author.username}...",
+                                        NotificationType.HINT
+                                    )
+                                    showDonationSheet = false
+                                    donationAmount = ""
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        enabled = donationAmount.isNotEmpty() && (donationAmount.toDoubleOrNull() ?: 0.0) > 0
+                    ) {
+                        Text(
+                            text = "Send Donation",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+            }
+        }
     }
 }
 
