@@ -37,6 +37,9 @@ import com.example.cyloop.api.CoinGeckoService
 import com.example.cyloop.format
 import kotlin.math.pow
 
+import com.example.cyloop.api.SolanaNetwork
+import com.example.cyloop.api.SolanaService
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WalletInfoView(
@@ -47,11 +50,18 @@ fun WalletInfoView(
 ) {
     val address by WalletManager.walletAddress.collectAsState()
     val wallets by WalletManager.wallets.collectAsState()
-    val activeWallet = wallets.find { it.address == address }
+    // Use allWallets to find the active one if it's currently filtered out (shouldn't happen with logic update)
+    val allWallets by WalletManager.allWallets.collectAsState()
+    val activeWallet = allWallets.find { it.address == address }
+    val currentNetwork by SolanaService.currentNetwork.collectAsState()
     
     val scope = rememberCoroutineScope()
     val notificationState = rememberNotificationState()
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showRenameDialog by remember { mutableStateOf(false) }
+    var walletToRename by remember { mutableStateOf<WalletInfo?>(null) }
+    var newWalletName by remember { mutableStateOf("") }
+    
     var showMenu by remember { mutableStateOf(false) }
     var showWalletSwitcher by remember { mutableStateOf(false) }
     var showAddWalletOverlay by remember { mutableStateOf(false) }
@@ -86,6 +96,41 @@ fun WalletInfoView(
         }
     }
     
+    if (showRenameDialog && walletToRename != null) {
+        AlertDialog(
+            onDismissRequest = { showRenameDialog = false },
+            title = { Text("Rename Wallet") },
+            text = {
+                OutlinedTextField(
+                    value = newWalletName,
+                    onValueChange = { newWalletName = it },
+                    label = { Text("Wallet Name") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (newWalletName.isNotBlank()) {
+                            WalletManager.renameWallet(walletToRename!!.address, newWalletName)
+                            showRenameDialog = false
+                        }
+                    },
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRenameDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     if (showDeleteDialog) {
         BasicAlertDialog(
             onDismissRequest = { showDeleteDialog = false }
@@ -238,7 +283,23 @@ fun WalletInfoView(
                                 Icon(
                                     Icons.Default.Check,
                                     contentDescription = "Active",
-                                    tint = MaterialTheme.colorScheme.primary
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(end = 8.dp)
+                                )
+                            }
+                            
+                            IconButton(
+                                onClick = {
+                                    walletToRename = wallet
+                                    newWalletName = wallet.name
+                                    showRenameDialog = true
+                                }
+                            ) {
+                                Icon(
+                                    Icons.Default.Edit,
+                                    contentDescription = "Rename",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
                         }
@@ -290,11 +351,25 @@ fun WalletInfoView(
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
-                                Text(
-                                    "Solana Network",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(6.dp)
+                                            .clip(CircleShape)
+                                            .background(
+                                                if (currentNetwork == SolanaNetwork.MAINNET) 
+                                                    Color(0xFF14F195) // Solana Green
+                                                else 
+                                                    Color(0xFFF5D45E) // Gold/Yellow
+                                            )
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        currentNetwork.displayName,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                             Icon(
                                 Icons.Default.KeyboardArrowDown,

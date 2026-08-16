@@ -91,7 +91,12 @@ object HeliusService {
     }
 
     private const val API_KEY = "705be33f-3a32-4d05-81ea-c13c684c19a6"
-    private const val BASE_URL = "https://mainnet.helius-rpc.com/?api-key=$API_KEY"
+    
+    private val baseUrl: String
+        get() = when (SolanaService.currentNetwork.value) {
+            SolanaNetwork.MAINNET -> "https://mainnet.helius-rpc.com/?api-key=$API_KEY"
+            SolanaNetwork.DEVNET -> "https://devnet.helius-rpc.com/?api-key=$API_KEY"
+        }
 
     suspend fun getAsset(assetId: String): HeliusAssetResult {
         val payload = buildJsonObject {
@@ -103,7 +108,7 @@ object HeliusService {
             })
         }
 
-        val response = client.post(BASE_URL) {
+        val response = client.post(baseUrl) {
             header(HttpHeaders.ContentType, "application/json")
             setBody(payload.toString())
         }
@@ -138,7 +143,7 @@ object HeliusService {
             })
         }
 
-        val response = client.post(BASE_URL) {
+        val response = client.post(baseUrl) {
             header(HttpHeaders.ContentType, "application/json")
             setBody(payload.toString())
         }

@@ -3,13 +3,22 @@ package com.example.cyloop.crypto
 import com.example.cyloop.api.CoinGeckoService
 import com.example.cyloop.api.HeliusService
 import com.example.cyloop.api.SolanaService
+import com.example.cyloop.api.SolanaNetwork
 import com.example.cyloop.storage.SecureStorage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.math.pow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 
 @Serializable
 enum class WalletType {
@@ -21,15 +30,22 @@ enum class WalletType {
 data class WalletInfo(
     val address: String,
     val name: String,
-    val type: WalletType
+    val type: WalletType,
+    val network: String = "DEVNET" // Default to DEVNET for existing wallets
 )
 
 object WalletManager {
     private val secureStorage = SecureStorage()
     private val json = Json { ignoreUnknownKeys = true }
+    private val managerScope = CoroutineScope(Dispatchers.Default)
     
     private val _wallets = MutableStateFlow<List<WalletInfo>>(emptyList())
-    val wallets: StateFlow<List<WalletInfo>> = _wallets
+    val allWallets: StateFlow<List<WalletInfo>> = _wallets
+
+    // Filtered wallets based on current network - uses stateIn for proper lifecycle
+    val wallets: StateFlow<List<WalletInfo>> = combine(_wallets, SolanaService.currentNetwork) { list, network ->
+        list.filter { it.network == network.name }
+    }.stateIn(managerScope, SharingStarted.Eagerly, emptyList())
 
     private val _activeWalletAddress = MutableStateFlow<String?>(null)
     val walletAddress: StateFlow<String?> = _activeWalletAddress
@@ -49,6 +65,7 @@ object WalletManager {
 
     init {
         loadWallets()
+        observeNetworkChanges()
     }
 
     private fun loadWallets() {
@@ -66,7 +83,27 @@ object WalletManager {
         if (activeAddr != null && _wallets.value.any { it.address == activeAddr }) {
             _activeWalletAddress.value = activeAddr
         } else {
-            _activeWalletAddress.value = _wallets.value.firstOrNull()?.address
+            // Pick first wallet of current network if active not found
+            _activeWalletAddress.value = wallets.value.firstOrNull()?.address
+        }
+    }
+
+    private fun observeNetworkChanges() {
+        managerScope.launch {
+            SolanaService.currentNetwork.collect { network ->
+                // Clear balances when network changes
+                _solBalance.value = 0.0
+                _usdcBalance.value = 0.0
+                
+                // If current active wallet is not on this network, switch to first available
+                val currentActive = _wallets.value.find { it.address == _activeWalletAddress.value }
+                if (currentActive == null || currentActive.network != network.name) {
+                    val firstOnNetwork = _wallets.value.find { it.network == network.name }
+                    _activeWalletAddress.value = firstOnNetwork?.address
+                }
+                
+                refreshBalances()
+            }
         }
     }
 
@@ -87,7 +124,7 @@ object WalletManager {
         val keypair = deriveKeypairFromMnemonic(mnemonicString)
         
         saveNewWallet(
-            WalletInfo(keypair.address, name, WalletType.MNEMONIC),
+            WalletInfo(keypair.address, name, WalletType.MNEMONIC, SolanaService.currentNetwork.value.name),
             mnemonicString,
             keypair.privateKeyBase58
         )
@@ -114,7 +151,7 @@ object WalletManager {
         try {
             val keypair = deriveKeypairFromMnemonic(trimmedMnemonic)
             saveNewWallet(
-                WalletInfo(keypair.address, name, WalletType.MNEMONIC),
+                WalletInfo(keypair.address, name, WalletType.MNEMONIC, SolanaService.currentNetwork.value.name),
                 trimmedMnemonic,
                 keypair.privateKeyBase58
             )
@@ -126,7 +163,6 @@ object WalletManager {
 
     suspend fun importWalletByPrivateKey(privateKeyBase58: String, name: String = "Wallet ${_wallets.value.size + 1}"): Boolean {
         try {
-            // Solana Private Key is usually Base58 of 64 bytes (seed + pubkey) or 32 bytes (seed)
             val decoded = CryptoUtils.decodeBase58(privateKeyBase58)
             if (decoded.size != 64 && decoded.size != 32) return false
             
@@ -139,7 +175,7 @@ object WalletManager {
             val address = CryptoUtils.encodeBase58(publicKeyBytes)
             
             saveNewWallet(
-                WalletInfo(address, name, WalletType.PRIVATE_KEY),
+                WalletInfo(address, name, WalletType.PRIVATE_KEY, SolanaService.currentNetwork.value.name),
                 null,
                 privateKeyBase58
             )
@@ -152,8 +188,8 @@ object WalletManager {
 
     private fun saveNewWallet(info: WalletInfo, mnemonic: String?, privateKey: String) {
         val currentList = _wallets.value.toMutableList()
-        // If address already exists, just update name/type or skip
-        val existingIndex = currentList.indexOfFirst { it.address == info.address }
+        // If address already exists on SAME network, just update name/type
+        val existingIndex = currentList.indexOfFirst { it.address == info.address && it.network == info.network }
         if (existingIndex >= 0) {
             currentList[existingIndex] = info
         } else {
@@ -163,7 +199,7 @@ object WalletManager {
         _wallets.value = currentList
         secureStorage.saveString("wallets_list", json.encodeToString(currentList))
         
-        // Save secrets keyed by address
+        // Save secrets keyed by address (sharing secret between networks is okay, address identifies it)
         if (mnemonic != null) {
             secureStorage.saveString("mnemonic_${info.address}", mnemonic)
         }
@@ -177,15 +213,13 @@ object WalletManager {
             _activeWalletAddress.value = address
             secureStorage.saveString("active_wallet_address", address)
             
-            // Legacy compatibility (optional)
-            secureStorage.saveString("wallet_address", address)
-            getMnemonic()?.let { secureStorage.saveString("wallet_mnemonic", it) }
-            getPrivateKey()?.let { secureStorage.saveString("wallet_private_key", it) }
-            
             // Reset balances for new wallet
             _solBalance.value = 0.0
             _usdcBalance.value = 0.0
-            // Trigger refresh in UI or here
+            
+            managerScope.launch {
+                refreshBalances()
+            }
         }
     }
 
@@ -205,18 +239,15 @@ object WalletManager {
         
         _isRefreshing.value = true
         try {
-            // 1. Fetch SOL
             val lamports = SolanaService.getBalance(addr)
             _solBalance.value = lamports / 10.0.pow(9.0)
 
-            // 2. Fetch Assets (USDC)
             val assets = HeliusService.getAssetsByOwner(addr)
             val usdcToken = assets.find { it.token_info?.symbol == "USDC" }
             _usdcBalance.value = usdcToken?.token_info?.let { 
                 it.balance.toDouble() / 10.0.pow(it.decimals.toDouble()) 
             } ?: 0.0
 
-            // 3. Fetch Prices
             val coins = CoinGeckoService.getCoins()
             _solPrice.value = coins.find { it.symbol.lowercase() == "sol" }?.current_price ?: 0.0
         } catch (e: Exception) {
@@ -269,7 +300,7 @@ object WalletManager {
             secureStorage.delete("active_wallet_address")
             _activeWalletAddress.value = null
         } else {
-            switchWallet(currentList.first().address)
+            _activeWalletAddress.value = wallets.value.firstOrNull()?.address
         }
         
         _solBalance.value = 0.0

@@ -14,6 +14,7 @@ object AuthPreferences {
     private val BALANCE_VISIBLE = booleanPreferencesKey("balance_visible")
     private val WALLET_ONBOARDED = booleanPreferencesKey("wallet_onboarded")
     private val LAST_KNOWN_BALANCE = stringPreferencesKey("last_known_balance")
+    private val SOLANA_NETWORK = stringPreferencesKey("solana_network")
 
     // We will need a way to provide the DataStore instance
     // For now, let's assume we can get it from a provider
@@ -88,6 +89,23 @@ object AuthPreferences {
         if (!::dataStore.isInitialized) return
         dataStore.edit { preferences ->
             preferences[WALLET_ONBOARDED] = onboarded
+        }
+    }
+
+    fun getSolanaNetwork(): Flow<String> {
+        return if (::dataStore.isInitialized) {
+            dataStore.data.map { preferences ->
+                preferences[SOLANA_NETWORK] ?: "DEVNET"
+            }
+        } else {
+            emptyFlow()
+        }
+    }
+
+    suspend fun setSolanaNetwork(network: String) {
+        if (!::dataStore.isInitialized) return
+        dataStore.edit { preferences ->
+            preferences[SOLANA_NETWORK] = network
         }
     }
     

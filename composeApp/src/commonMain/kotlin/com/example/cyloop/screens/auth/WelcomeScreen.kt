@@ -66,6 +66,9 @@ import cyloop.composeapp.generated.resources.logo
 import org.jetbrains.compose.resources.painterResource
 
 
+import com.example.cyloop.api.SolanaNetwork
+import com.example.cyloop.api.SolanaService
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WelcomeScreen(
@@ -76,6 +79,8 @@ fun WelcomeScreen(
     var showNetworkDialog by remember { mutableStateOf(false) }
     var showCreateAccountSheet by remember { mutableStateOf(false) }
     var username by remember { mutableStateOf("") }
+    
+    val currentNetwork by SolanaService.currentNetwork.collectAsState()
 
     val biometricEnabled by AuthPreferences
         .isBiometricEnabled()
@@ -252,6 +257,7 @@ fun WelcomeScreen(
     // Centered Network Selection Dialog
     if (showNetworkDialog) {
         NetworkSelectionDialog(
+            currentNetwork = currentNetwork,
             onDismiss = { showNetworkDialog = false },
             onMainNetClick = {
                 onMainNetClick()
@@ -327,6 +333,7 @@ fun WelcomeScreen(
 
 @Composable
 fun NetworkSelectionDialog(
+    currentNetwork: SolanaNetwork,
     onDismiss: () -> Unit,
     onMainNetClick: () -> Unit,
     onDevNetClick: () -> Unit
@@ -366,7 +373,7 @@ fun NetworkSelectionDialog(
                 ) {
                     // Title
                     Text(
-                        text = "Please Select Your Network",
+                        text = "Select Network",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -377,6 +384,7 @@ fun NetworkSelectionDialog(
                     // Main-Net Button
                     NetworkButton(
                         text = "Main-Net",
+                        isSelected = currentNetwork == SolanaNetwork.MAINNET,
                         onClick = onMainNetClick
                     )
 
@@ -385,6 +393,7 @@ fun NetworkSelectionDialog(
                     // Dev-Net Button
                     NetworkButton(
                         text = "Dev-Net",
+                        isSelected = currentNetwork == SolanaNetwork.DEVNET,
                         onClick = onDevNetClick
                     )
 
@@ -418,6 +427,7 @@ fun NetworkSelectionDialog(
 @Composable
 fun NetworkButton(
     text: String,
+    isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -428,8 +438,8 @@ fun NetworkButton(
             .height(52.dp),
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            contentColor = MaterialTheme.colorScheme.primary
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+            contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary
         ),
         border = BorderStroke(
             width = 1.dp,

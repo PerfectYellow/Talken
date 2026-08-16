@@ -17,6 +17,12 @@ import com.example.cyloop.screens.wallet.NewTransactionView
 import com.example.cyloop.screens.wallet.BillMakerView
 import com.example.cyloop.screens.profile.UploadContentScreen
 
+import androidx.compose.runtime.rememberCoroutineScope
+import com.example.cyloop.api.SolanaNetwork
+import com.example.cyloop.api.SolanaService
+import com.example.cyloop.storage.AuthPreferences
+import kotlinx.coroutines.launch
+
 @Composable
 fun NavHost(
     navController: NavController,
@@ -24,6 +30,7 @@ fun NavHost(
 ) {
     val currentRoute = navController.currentRoute
     val saveableStateHolder = rememberSaveableStateHolder()
+    val scope = rememberCoroutineScope()
 
     // Ensure we start at the correct route if backstack is empty
     if (navController.isBackStackEmpty()) {
@@ -45,8 +52,18 @@ fun NavHost(
                     onSignInClick = {
                         navController.navigate(Route.TabView(tab = "profile"))
                     },
-                    onMainNetClick = { /* Navigate to MainNet screen */ },
-                    onDevNetClick = { /* Navigate to DevNet screen */ }
+                    onMainNetClick = {
+                        scope.launch {
+                            SolanaService.setNetwork(SolanaNetwork.MAINNET)
+                            AuthPreferences.setSolanaNetwork(SolanaNetwork.MAINNET.name)
+                        }
+                    },
+                    onDevNetClick = {
+                        scope.launch {
+                            SolanaService.setNetwork(SolanaNetwork.DEVNET)
+                            AuthPreferences.setSolanaNetwork(SolanaNetwork.DEVNET.name)
+                        }
+                    }
                 )
             }
 

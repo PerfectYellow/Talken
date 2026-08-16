@@ -23,6 +23,10 @@ import com.example.cyloop.components.QRCodeView
 import com.example.cyloop.font.UIFont
 import com.example.cyloop.theme.getAppBackgroundBrush
 
+import com.example.cyloop.api.SolanaNetwork
+import com.example.cyloop.api.SolanaService
+import androidx.compose.foundation.shape.CircleShape
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DepositScreen(
@@ -31,6 +35,7 @@ fun DepositScreen(
 ) {
     val clipboardManager = LocalClipboardManager.current
     val snackbarHostState = remember { SnackbarHostState() }
+    val currentNetwork by SolanaService.currentNetwork.collectAsState()
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -137,15 +142,32 @@ fun DepositScreen(
                 Spacer(modifier = Modifier.height(48.dp))
 
                 Surface(
-                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                    color = if (currentNetwork == SolanaNetwork.MAINNET) 
+                        Color(0xFF14F195).copy(alpha = 0.1f) 
+                    else 
+                        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text(
-                        text = "Only send Solana (SOL) network assets to this address.",
-                        style = UIFont.Badge.copy(fontSize = 11.sp),
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (currentNetwork == SolanaNetwork.MAINNET) Color(0xFF14F195) else Color(0xFFF5D45E)
+                                )
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Only send Solana ${currentNetwork.displayName} assets to this address.",
+                            style = UIFont.Badge.copy(fontSize = 11.sp),
+                            color = if (currentNetwork == SolanaNetwork.MAINNET) Color(0xFF14F195) else MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
                 }
             }
         }

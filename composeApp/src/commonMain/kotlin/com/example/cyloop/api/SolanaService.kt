@@ -7,6 +7,8 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 @Serializable
 data class SolanaRpcError(
@@ -96,6 +98,11 @@ data class BalanceResult(
     val value: Long
 )
 
+enum class SolanaNetwork(val url: String, val displayName: String) {
+    MAINNET("https://api.mainnet-beta.solana.com", "Mainnet"),
+    DEVNET("https://api.devnet.solana.com", "Devnet")
+}
+
 object SolanaService {
     private val json = Json {
         ignoreUnknownKeys = true
@@ -110,8 +117,15 @@ object SolanaService {
         }
     }
 
-    private const val MAINNET_URL = "https://api.mainnet-beta.solana.com"
-    private const val DEVNET_URL = "https://api.devnet.solana.com"
+    private val _currentNetwork = MutableStateFlow(SolanaNetwork.DEVNET)
+    val currentNetwork: StateFlow<SolanaNetwork> = _currentNetwork
+
+    fun setNetwork(network: SolanaNetwork) {
+        _currentNetwork.value = network
+    }
+
+    private val currentUrl: String
+        get() = _currentNetwork.value.url
 
     suspend fun getBalance(address: String): Long {
         val payload = buildJsonObject {
@@ -123,7 +137,7 @@ object SolanaService {
             })
         }
 
-        val response = client.post(MAINNET_URL) {
+        val response = client.post(currentUrl) {
             header(HttpHeaders.ContentType, "application/json")
             setBody(payload.toString())
         }
@@ -151,7 +165,7 @@ object SolanaService {
             })
         }
 
-        val response = client.post(DEVNET_URL) {
+        val response = client.post(currentUrl) {
             header(HttpHeaders.ContentType, "application/json")
             header(HttpHeaders.Accept, "application/json")
             header(HttpHeaders.UserAgent, "CyLoop/1.0")
@@ -188,7 +202,7 @@ object SolanaService {
             })
         }
 
-        val response = client.post(DEVNET_URL) {
+        val response = client.post(currentUrl) {
             header(HttpHeaders.ContentType, "application/json")
             header(HttpHeaders.Accept, "application/json")
             header(HttpHeaders.UserAgent, "CyLoop/1.0")
