@@ -11,4 +11,9 @@ actual object SolanaCryptoBridge {
         // For now, to allow the project to build:
         return prunedSeed // This will cause address mismatch on iOS for now
     }
+
+    actual fun sign(message: ByteArray, seed: ByteArray): ByteArray {
+        // Placeholder for iOS signature.
+        return ByteArray(64)
+    }
 }

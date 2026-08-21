@@ -1,20 +1,27 @@
 package com.example.cyloop.screens.wallet
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cyloop.crypto.WalletManager
@@ -40,8 +47,12 @@ fun SendView(
     var showScanner by remember { mutableStateOf(false) }
     var showPermissionDialog by remember { mutableStateOf(false) }
     
+    var isSending by remember { mutableStateOf(false) }
+    var transactionSignature by remember { mutableStateOf<String?>(null) }
+    
     val scope = rememberCoroutineScope()
     val notificationState = rememberNotificationState()
+    val clipboardManager = LocalClipboardManager.current
     
     val solBalance by WalletManager.solBalance.collectAsState()
 
@@ -49,7 +60,6 @@ fun SendView(
         QRScannerView(
             onCodeScanned = { code ->
                 if (code.startsWith("solana:")) {
-                    // Format: solana:<address>?amount=<amount>
                     val parts = code.removePrefix("solana:").split("?")
                     destinationAddress = parts.firstOrNull() ?: ""
                     
@@ -101,7 +111,7 @@ fun SendView(
             TopAppBar(
                 title = { Text("Send SOL", style = UIFont.ChatName) },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(onClick = onBackClick, enabled = !isSending) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
@@ -149,9 +159,10 @@ fun SendView(
                     onValueChange = { destinationAddress = it },
                     label = { Text("Destination Address") },
                     modifier = Modifier.fillMaxWidth(),
+                    enabled = !isSending && transactionSignature == null,
                     shape = RoundedCornerShape(16.dp),
                     trailingIcon = {
-                        FilledIconButton(
+                        IconButton(
                             onClick = {
                                 if (hasCameraPermission()) {
                                     showScanner = true
@@ -165,18 +176,9 @@ fun SendView(
                                     }
                                 }
                             },
-                            modifier = Modifier.padding(end = 8.dp).size(40.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = IconButtonDefaults.filledIconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary
-                            )
+                            enabled = !isSending && transactionSignature == null
                         ) {
-                            Icon(
-                                Icons.Default.QrCodeScanner, 
-                                contentDescription = "Scan QR",
-                                modifier = Modifier.size(20.dp)
-                            )
+                            Icon(Icons.Default.QrCodeScanner, contentDescription = "Scan QR")
                         }
                     },
                     placeholder = { Text("Enter Solana address...") }
@@ -194,9 +196,13 @@ fun SendView(
                     },
                     label = { Text("Amount (SOL)") },
                     modifier = Modifier.fillMaxWidth(),
+                    enabled = !isSending && transactionSignature == null,
                     shape = RoundedCornerShape(16.dp),
                     suffix = {
-                        TextButton(onClick = { amount = solBalance.toString() }) {
+                        TextButton(
+                            onClick = { amount = solBalance.toString() },
+                            enabled = !isSending && transactionSignature == null
+                        ) {
                             Text("MAX")
                         }
                     },
@@ -205,26 +211,153 @@ fun SendView(
 
                 Spacer(modifier = Modifier.height(48.dp))
 
-                Button(
-                    onClick = {
-                        if (destinationAddress.isBlank() || amount.isBlank()) {
-                            scope.launch {
-                                notificationState.showNotification("Please fill all fields", NotificationType.ERROR)
+                if (transactionSignature == null) {
+                    Button(
+                        onClick = {
+                            val amountDouble = amount.toDoubleOrNull()
+                            if (amountDouble == null || amountDouble <= 0) {
+                                scope.launch { notificationState.showNotification("Invalid amount", NotificationType.ERROR) }
+                                return@Button
                             }
-                            return@Button
+
+                            if (amountDouble > solBalance) {
+                                scope.launch { notificationState.showNotification("Insufficient balance", NotificationType.ERROR) }
+                                return@Button
+                            }
+
+                            scope.launch {
+                                try {
+                                    isSending = true
+                                    notificationState.showNotification("Signing & Sending...", NotificationType.HINT)
+                                    val signature = WalletManager.sendSOL(destinationAddress, amountDouble)
+                                    transactionSignature = signature
+                                    isSending = false
+                                } catch (e: Exception) {
+                                    isSending = false
+                                    notificationState.showNotification(e.message ?: "Transaction failed", NotificationType.ERROR)
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        enabled = destinationAddress.isNotBlank() && amount.isNotBlank() && !isSending
+                    ) {
+                        if (isSending) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text("Sending...")
+                        } else {
+                            Text("Send SOL", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        }
+                    }
+                }
+
+                // Success Section
+                AnimatedVisibility(
+                    visible = transactionSignature != null,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                            shape = RoundedCornerShape(24.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(48.dp)
+                                )
+                                
+                                Spacer(modifier = Modifier.height(16.dp))
+                                
+                                Text(
+                                    text = "Transaction Sent Successfully!",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                                
+                                Spacer(modifier = Modifier.height(24.dp))
+                                
+                                Text(
+                                    text = "Transaction Signature",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                
+                                Row(
+                                    modifier = Modifier
+                                        .padding(top = 8.dp)
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
+                                        .clickable {
+                                            transactionSignature?.let {
+                                                clipboardManager.setText(AnnotatedString(it))
+                                                scope.launch {
+                                                    notificationState.showNotification("Signature copied!", NotificationType.HINT)
+                                                }
+                                            }
+                                        }
+                                        .padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = transactionSignature ?: "",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        modifier = Modifier.weight(1f),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Default.ContentCopy,
+                                        contentDescription = "Copy",
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
                         }
                         
-                        // Transaction Logic would go here
-                        scope.launch {
-                            notificationState.showNotification("Transaction initiated to ${destinationAddress.take(4)}...", NotificationType.HINT)
+                        Spacer(modifier = Modifier.height(32.dp))
+                        
+                        Button(
+                            onClick = onBackClick,
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Text("Done", fontWeight = FontWeight.Bold)
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    enabled = destinationAddress.isNotBlank() && amount.isNotBlank()
-                ) {
-                    Text("Continue", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    }
                 }
+            }
+
+            // Full-screen loading overlay to prevent actions
+            if (isSending) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.1f))
+                        .clickable(enabled = false) {} // Intercept clicks
+                )
             }
 
             FloatingNotification(

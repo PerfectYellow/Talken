@@ -226,6 +226,68 @@ object SolanaService {
         }
     }
 
+    suspend fun getLatestBlockhash(): String {
+        val payload = buildJsonObject {
+            put("jsonrpc", "2.0")
+            put("id", 1)
+            put("method", "getLatestBlockhash")
+            put("params", buildJsonArray {
+                add(buildJsonObject {
+                    put("commitment", "finalized") // Use finalized for better compatibility
+                })
+            })
+        }
+
+        val response = client.post(currentUrl) {
+            header(HttpHeaders.ContentType, "application/json")
+            setBody(payload.toString())
+        }
+
+        val responseText = response.bodyAsText()
+        val responseObj = json.parseToJsonElement(responseText).jsonObject
+        
+        if (responseObj.containsKey("error")) {
+            val error = responseObj["error"]?.jsonObject
+            throw Exception(error?.get("message")?.jsonPrimitive?.content ?: "Blockhash RPC error")
+        }
+
+        val result = responseObj["result"]?.jsonObject?.get("value")?.jsonObject
+        return result?.get("blockhash")?.jsonPrimitive?.content ?: throw Exception("Failed to get blockhash")
+    }
+
+    suspend fun sendTransaction(base64Transaction: String): String {
+        val payload = buildJsonObject {
+            put("jsonrpc", "2.0")
+            put("id", 1)
+            put("method", "sendTransaction")
+            put("params", buildJsonArray {
+                add(base64Transaction)
+                add(buildJsonObject {
+                    put("encoding", "base64")
+                    put("preflightCommitment", "confirmed")
+                })
+            })
+        }
+
+        val response = client.post(currentUrl) {
+            header(HttpHeaders.ContentType, "application/json")
+            setBody(payload.toString())
+        }
+
+        val responseText = response.bodyAsText()
+        val responseObj = json.parseToJsonElement(responseText).jsonObject
+        
+        if (responseObj.containsKey("error")) {
+            val error = responseObj["error"]?.jsonObject
+            val message = error?.get("message")?.jsonPrimitive?.content ?: "Unknown RPC error"
+            // If it's a simulation error, sometimes more details are in 'data'
+            val data = error?.get("data")
+            throw Exception(if (data != null) "$message: $data" else message)
+        }
+
+        return responseObj["result"]?.jsonPrimitive?.content ?: throw Exception("No signature returned")
+    }
+
     fun parseAccountData(data: JsonElement): AccountData? {
         return try {
             if (data is JsonObject) {

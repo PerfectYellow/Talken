@@ -26,7 +26,6 @@ filekit = "0.8.8"
 krypto = "4.0.10"
 androidxBiometric = "1.2.0"
 qrcode-kotlin = "4.5.0"
-solana-kotlin = "0.2.3"
 androidxCamera = "1.4.1"
 mlkitBarcodeScanning = "17.3.0"
 
@@ -69,7 +68,6 @@ filekit-core = { module = "io.github.vinceglb:filekit-core", version.ref = "file
 krypto = { module = "com.soywiz.korlibs.krypto:krypto", version.ref = "krypto" }
 androidx-biometric = { module = "androidx.biometric:biometric-ktx", version.ref = "androidxBiometric" }
 qrcode-kotlin = { module = "io.github.g0dkar:qrcode-kotlin", version.ref = "qrcode-kotlin" }
-solana-kotlin = { module = "com.solana:solana-kotlin-sdk", version.ref = "solana-kotlin" }
 androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "androidxCamera" }
 androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "androidxCamera" }
 androidx-camera-view = { module = "androidx.camera:camera-view", version.ref = "androidxCamera" }

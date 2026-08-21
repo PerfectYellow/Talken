@@ -11,6 +11,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -392,36 +394,6 @@ fun WalletInfoView(
                                 expanded = showMenu,
                                 onDismissRequest = { showMenu = false }
                             ) {
-//                                if (wallets.size > 1) {
-//                                    DropdownMenuItem(
-//                                        text = { Text("Switch Wallet") },
-//                                        leadingIcon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = null) },
-//                                        onClick = {
-//                                            showMenu = false
-//                                            showWalletSwitcher = true
-//                                        }
-//                                    )
-//                                    HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
-//                                }
-//                                DropdownMenuItem(
-//                                    text = { Text("Create Another Wallet") },
-//                                    leadingIcon = { Icon(Icons.Default.AddCircleOutline, contentDescription = null) },
-//                                    onClick = {
-//                                        showMenu = false
-//                                        initialOnboardingStep = OnboardingStep.CREATE_GENERATE
-//                                        showAddWalletOverlay = true
-//                                    }
-//                                )
-//                                DropdownMenuItem(
-//                                    text = { Text("Import Another Wallet") },
-//                                    leadingIcon = { Icon(Icons.Default.FileUpload, contentDescription = null) },
-//                                    onClick = {
-//                                        showMenu = false
-//                                        initialOnboardingStep = OnboardingStep.WELCOME
-//                                        showAddWalletOverlay = true
-//                                    }
-//                                )
-//                                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
                                 DropdownMenuItem(
                                     text = { Text("Save Backup") },
                                     leadingIcon = { Icon(Icons.Default.Save, contentDescription = null) },
@@ -454,82 +426,93 @@ fun WalletInfoView(
                 )
             }
         ) { padding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .background(MaterialTheme.colorScheme.background),
-                horizontalAlignment = Alignment.CenterHorizontally
+            val refreshState = rememberPullToRefreshState()
+            
+            PullToRefreshBox(
+                isRefreshing = isLoading,
+                onRefresh = {
+                    scope.launch {
+                        WalletManager.refreshBalances()
+                    }
+                },
+                state = refreshState,
+                modifier = Modifier.padding(padding).fillMaxSize()
             ) {
-                // Main Balance Card with Gradient
-                Card(
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                    shape = RoundedCornerShape(24.dp)
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .background(MaterialTheme.colorScheme.background),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Box(
+                    // Main Balance Card with Gradient
+                    Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(
-                                Brush.linearGradient(
-                                    colors = listOf(
-                                        MaterialTheme.colorScheme.primary,
-                                        MaterialTheme.colorScheme.secondary
+                            .padding(16.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                        shape = RoundedCornerShape(24.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    Brush.linearGradient(
+                                        colors = listOf(
+                                            MaterialTheme.colorScheme.primary,
+                                            MaterialTheme.colorScheme.secondary
+                                        )
                                     )
                                 )
-                            )
-                            .padding(24.dp)
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.fillMaxWidth()
+                                .padding(24.dp)
                         ) {
-                            Text(
-                                text = "Total Balance",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = Color.White.copy(alpha = 0.8f)
-                            )
-                            
-                            if (isLoading) {
-                                CircularProgressIndicator(
-                                    color = Color.White,
-                                    modifier = Modifier.size(32.dp).padding(4.dp)
-                                )
-                            } else {
-                                val totalValue = (solBalance * solPrice) + (usdcBalance * usdcPrice)
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
                                 Text(
-                                    text = "$${totalValue.format(2)}",
-                                    style = MaterialTheme.typography.displayMedium.copy(
-                                        fontWeight = FontWeight.Black,
-                                        letterSpacing = (-1).sp
-                                    ),
-                                    color = Color.White
+                                    text = "Total Balance",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = Color.White.copy(alpha = 0.8f)
                                 )
-                            }
-                            
-                            Spacer(modifier = Modifier.height(16.dp))
-                            
-                            Surface(
-                                color = Color.White.copy(alpha = 0.15f),
-                                shape = RoundedCornerShape(16.dp),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        address?.let {
-                                            clipboardManager.setText(AnnotatedString(it))
-                                            scope.launch {
-                                                notificationState.showNotification("Address copied to clipboard", NotificationType.HINT)
+                                
+                                if (isLoading) {
+                                    CircularProgressIndicator(
+                                        color = Color.White,
+                                        modifier = Modifier.size(32.dp).padding(4.dp)
+                                    )
+                                } else {
+                                    val totalValue = (solBalance * solPrice) + (usdcBalance * usdcPrice)
+                                    Text(
+                                        text = "$${totalValue.format(2)}",
+                                        style = MaterialTheme.typography.displayMedium.copy(
+                                            fontWeight = FontWeight.Black,
+                                            letterSpacing = (-1).sp
+                                        ),
+                                        color = Color.White
+                                    )
+                                }
+                                
+                                Spacer(modifier = Modifier.height(16.dp))
+                                
+                                Surface(
+                                    color = Color.White.copy(alpha = 0.15f),
+                                    shape = RoundedCornerShape(16.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            address?.let {
+                                                clipboardManager.setText(AnnotatedString(it))
+                                                scope.launch {
+                                                    notificationState.showNotification("Address copied to clipboard", NotificationType.HINT)
+                                                }
                                             }
                                         }
-                                    }
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
                                 ) {
                                     Icon(
                                         Icons.Default.AccountBalanceWallet,
@@ -615,6 +598,7 @@ fun WalletInfoView(
                 Spacer(modifier = Modifier.height(32.dp))
             }
         }
+    }
         
         FloatingNotification(
             state = notificationState,

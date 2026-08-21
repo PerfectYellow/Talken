@@ -10,6 +10,10 @@ object Ed25519 {
         // expect the raw 32-byte seed. We pass it directly to the platform bridge.
         return SolanaCryptoBridge.derivePublicKey(seed)
     }
+
+    fun sign(message: ByteArray, seed: ByteArray): ByteArray {
+        return SolanaCryptoBridge.sign(message, seed)
+    }
 }
 
 expect object SolanaCryptoBridge {
@@ -17,4 +21,9 @@ expect object SolanaCryptoBridge {
      * Derives a 32-byte Ed25519 public key from a 32-byte seed.
      */
     fun derivePublicKey(seed: ByteArray): ByteArray
+
+    /**
+     * Signs a message with a 32-byte Ed25519 seed.
+     */
+    fun sign(message: ByteArray, seed: ByteArray): ByteArray
 }
