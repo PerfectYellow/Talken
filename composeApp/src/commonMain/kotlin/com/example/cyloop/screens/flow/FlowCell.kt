@@ -15,6 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -30,6 +32,7 @@ fun FlowCell(
     modifier: Modifier = Modifier,
 ) {
     val isDark = true //isSystemInDarkTheme()
+    val clipboardManager = LocalClipboardManager.current
 
     fun getColorForPostId(postId: String): Color {
         val colors = listOf(
@@ -147,6 +150,9 @@ fun FlowCell(
 
             // PDA Tag
             Surface(
+                onClick = {
+                    clipboardManager.setText(AnnotatedString(flowItem.signature))
+                },
                 color = if (isDark) Color.Black.copy(alpha = 0.3f) else Color.Black.copy(alpha = 0.05f),
                 shape = RoundedCornerShape(8.dp)
             ) {

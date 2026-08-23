@@ -26,6 +26,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.cyloop.api.SolanaAccountResponse
 import com.example.cyloop.api.SolanaService
 import com.example.cyloop.api.SolanaSignatureResponse
+import androidx.compose.animation.*
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.CheckCircle
+import com.example.cyloop.crypto.WalletManager
 import com.example.cyloop.components.FloatingNotification
 import com.example.cyloop.components.NotificationType
 import com.example.cyloop.components.rememberNotificationState
@@ -91,6 +97,11 @@ fun FlowScreen(
     var selectedPostForDonation by remember { mutableStateOf<PostItem?>(null) }
     val donationSheetState = rememberModalBottomSheetState()
     var donationAmount by remember { mutableStateOf("") }
+    var isSendingDonation by remember { mutableStateOf(false) }
+
+    val solBalance by WalletManager.solBalance.collectAsState()
+    val activeWalletAddress by WalletManager.walletAddress.collectAsState()
+    val currentNetwork by SolanaService.currentNetwork.collectAsState()
 
     val targetAddress = "CV1vESFrRPhXdZVtG7vcvitnmYgXBoxbzasb9po4UaC"
 
@@ -108,7 +119,7 @@ fun FlowScreen(
         }
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(currentNetwork) {
         if (initialFeed == null) {
             isRefreshing = true
             fetchData()
@@ -148,12 +159,21 @@ fun FlowScreen(
                     Box(
                         modifier = Modifier
                             .size(8.dp)
-                            .background(MaterialTheme.colorScheme.primary, CircleShape)
+                            .background(
+                                if (currentNetwork == com.example.cyloop.api.SolanaNetwork.MAINNET) 
+                                    Color(0xFF14F195) 
+                                else 
+                                    Color(0xFFF5D45E), 
+                                CircleShape
+                            )
                     )
                     Text(
-                        text = "Sync Live",
+                        text = currentNetwork.displayName,
                         style = UIFont.Metadata.copy(
-                            color = MaterialTheme.colorScheme.primary,
+                            color = if (currentNetwork == com.example.cyloop.api.SolanaNetwork.MAINNET) 
+                                Color(0xFF14F195) 
+                            else 
+                                MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Medium
                         )
                     )
@@ -293,88 +313,241 @@ fun FlowScreen(
         FloatingNotification(state = notificationState)
 
         if (showDonationSheet && selectedPostForDonation != null) {
+            var transactionSignature by remember { mutableStateOf<String?>(null) }
+            val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
+
             ModalBottomSheet(
                 onDismissRequest = {
-                    showDonationSheet = false
-                    donationAmount = ""
+                    if (!isSendingDonation) {
+                        showDonationSheet = false
+                        donationAmount = ""
+                    }
                 },
                 sheetState = donationSheetState,
                 shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
                 containerColor = MaterialTheme.colorScheme.surface
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 16.dp)
-                        .navigationBarsPadding(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "Back this Flow",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    Text(
-                        text = "How much do you want to donate to ${selectedPostForDonation!!.author.username}?",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
-                    
-                    Spacer(modifier = Modifier.height(24.dp))
-                    
-                    OutlinedTextField(
-                        value = donationAmount,
-                        onValueChange = { 
-                            if (it.isEmpty() || it.toDoubleOrNull() != null) {
-                                donationAmount = it
-                            }
-                        },
-                        label = { Text("Amount (SOL)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        placeholder = { Text("0.0") },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                        )
-                    )
-
-                    Spacer(modifier = Modifier.height(32.dp))
-                    
-                    Button(
-                        onClick = {
-                            val amount = donationAmount.toDoubleOrNull() ?: 0.0
-                            if (amount > 0) {
-                                scope.launch {
-                                    notificationState.showNotification(
-                                        "Sending $amount SOL to ${selectedPostForDonation!!.author.username}...",
-                                        NotificationType.HINT
-                                    )
-                                    showDonationSheet = false
-                                    donationAmount = ""
-                                }
-                            }
-                        },
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        enabled = donationAmount.isNotEmpty() && (donationAmount.toDoubleOrNull() ?: 0.0) > 0
+                            .padding(horizontal = 24.dp, vertical = 16.dp)
+                            .navigationBarsPadding(),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "Send Donation",
-                            style = MaterialTheme.typography.titleMedium,
+                            text = "Back this Flow",
+                            style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold
                         )
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        Text(
+                            text = "How much do you want to donate to ${selectedPostForDonation!!.author.username}?",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Balance Display
+                        Surface(
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Available Balance",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    text = "${solBalance.format(4)} SOL",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+                        
+                        OutlinedTextField(
+                            value = donationAmount,
+                            onValueChange = { 
+                                if (it.isEmpty() || it.toDoubleOrNull() != null) {
+                                    donationAmount = it
+                                }
+                            },
+                            label = { Text("Amount (SOL)") },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !isSendingDonation && transactionSignature == null,
+                            shape = RoundedCornerShape(16.dp),
+                            placeholder = { Text("0.0") },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            suffix = {
+                                TextButton(
+                                    onClick = { donationAmount = solBalance.toString() },
+                                    enabled = !isSendingDonation && transactionSignature == null
+                                ) {
+                                    Text("MAX")
+                                }
+                            },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(32.dp))
+                        
+                        if (transactionSignature == null) {
+                            Button(
+                                onClick = {
+                                    val amountDouble = donationAmount.toDoubleOrNull() ?: 0.0
+                                    if (amountDouble <= 0) {
+                                        scope.launch { notificationState.showNotification("Invalid amount", NotificationType.ERROR) }
+                                        return@Button
+                                    }
+                                    if (amountDouble > solBalance) {
+                                        scope.launch { notificationState.showNotification("Insufficient balance", NotificationType.ERROR) }
+                                        return@Button
+                                    }
+
+                                    scope.launch {
+                                        try {
+                                            isSendingDonation = true
+                                            notificationState.showNotification("Signing & Sending...", NotificationType.HINT)
+                                            
+                                            // SEND TO THE PDA ADDRESS (The Flow itself)
+                                            // This ensures the "Backed Amount" updates on the blockchain
+                                            val signature = WalletManager.sendSOL(
+                                                selectedPostForDonation!!.postId, 
+                                                amountDouble
+                                            )
+                                            
+                                            transactionSignature = signature
+                                            isSendingDonation = false
+                                            notificationState.showNotification("Flow Backed!", NotificationType.HINT)
+                                        } catch (e: Exception) {
+                                            isSendingDonation = false
+                                            notificationState.showNotification(e.message ?: "Transaction failed", NotificationType.ERROR)
+                                        }
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                enabled = donationAmount.isNotEmpty() && !isSendingDonation
+                            ) {
+                                if (isSendingDonation) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        strokeWidth = 2.dp
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text("Processing...")
+                                } else {
+                                    Text(
+                                        text = "Send Donation",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+
+                        // Success Info in the sheet
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = transactionSignature != null,
+                            enter = expandVertically() + fadeIn()
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
+                                    shape = RoundedCornerShape(16.dp),
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Text(
+                                            text = "Transaction Success",
+                                            style = MaterialTheme.typography.labelLarge,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(MaterialTheme.colorScheme.surface)
+                                                .clickable {
+                                                    transactionSignature?.let {
+                                                        clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(it))
+                                                        scope.launch { notificationState.showNotification("Signature copied!", NotificationType.HINT) }
+                                                    }
+                                                }
+                                                .padding(8.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text(
+                                                text = transactionSignature ?: "",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                maxLines = 1,
+                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            Icon(
+                                                imageVector = Icons.Default.ContentCopy,
+                                                contentDescription = "Copy",
+                                                modifier = Modifier.size(16.dp),
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    }
+                                }
+                                
+                                Spacer(modifier = Modifier.height(24.dp))
+                                
+                                Button(
+                                    onClick = {
+                                        showDonationSheet = false
+                                        donationAmount = ""
+                                    },
+                                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                                    shape = RoundedCornerShape(16.dp)
+                                ) {
+                                    Text("Done")
+                                }
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Loading overlay for the sheet content
+                    if (isSendingDonation) {
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .background(Color.Black.copy(alpha = 0.05f))
+                                .clickable(enabled = false) {}
+                        )
+                    }
                 }
             }
         }
@@ -389,6 +562,9 @@ fun mapResponseToPost(
     val result = response.result?.value ?: throw Exception("Account data not found")
     val accountData = SolanaService.parseAccountData(result.data)
     val info = accountData?.parsed?.info
+    
+    // The "Author" is the authority (creator) stored in the PDA data
+    val creatorAddress = info?.authority ?: result.owner
     
     fun formatAddr(addr: String) = if (addr.length > 8) "${addr.take(4)}...${addr.takeLast(4)}" else addr
 
@@ -432,8 +608,8 @@ fun mapResponseToPost(
         postId = address,
         signature = address,
         author = Author(
-            wallet = result.owner,
-            username = formatAddr(result.owner),
+            wallet = creatorAddress,
+            username = formatAddr(creatorAddress),
             avatar = null
         ),
         content = Content(text = safeContent),
